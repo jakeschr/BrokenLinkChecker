@@ -8,6 +8,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 public class Controller {
 
@@ -38,10 +39,9 @@ public class Controller {
     private int totalPageCount = 0;
     private int totalLinks = 0;
     private int totalPages = 0;
-    private static final int ROWS_PER_PAGE = 10;
-    private static final int MAX_PAGE_BUTTONS = 7;
 
     private CheckStatus currentStatus = CheckStatus.IDLE;
+
 
     @FXML
     public void initialize() {
@@ -69,14 +69,19 @@ public class Controller {
         setStatus(CheckStatus.IDLE);
     }
 
+    private static final int MAX_PAGE_BUTTONS = 5; // ✅ Ganti dari 7 jadi 5
+    private static final int ROWS_PER_PAGE = 10;
+    private static final double PAGE_BUTTON_WIDTH = 40; // ✅ Ukuran tetap untuk semua tombol
+
     private void updateCustomPagination() {
         customPagination.getChildren().clear();
 
-        // Baris tombol pagination
         HBox buttonBox = new HBox(5);
         buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
-        Button prevButton = new Button("<");
+        // Tombol Prev (⯇)
+        Button prevButton = new Button("⯇");
+        stylePageButton(prevButton);
         prevButton.setDisable(currentPage == 1);
         prevButton.setOnAction(e -> {
             if (currentPage > 1) {
@@ -86,7 +91,9 @@ public class Controller {
             }
         });
 
-        Button nextButton = new Button(">");
+        // Tombol Next (⯈)
+        Button nextButton = new Button("⯈");
+        stylePageButton(nextButton);
         nextButton.setDisable(currentPage == totalPageCount || totalPageCount == 0);
         nextButton.setOnAction(e -> {
             if (currentPage < totalPageCount) {
@@ -98,6 +105,7 @@ public class Controller {
 
         buttonBox.getChildren().add(prevButton);
 
+        // Hitung range halaman yang akan ditampilkan
         int startPage, endPage;
         if (totalPageCount <= MAX_PAGE_BUTTONS) {
             startPage = 1;
@@ -118,7 +126,7 @@ public class Controller {
 
         for (int i = startPage; i <= endPage; i++) {
             Button btn = new Button(String.valueOf(i));
-            btn.getStyleClass().add("page-button");
+            stylePageButton(btn);
             if (i == currentPage) btn.getStyleClass().add("current-page");
             final int pageIndex = i;
             btn.setOnAction(e -> {
@@ -134,13 +142,23 @@ public class Controller {
         // Label halaman di bawah tombol
         Label pageInfo = new Label("Halaman " + currentPage + " / " + (totalPageCount == 0 ? 1 : totalPageCount));
         pageInfo.setStyle("-fx-font-size: 11; -fx-text-fill: #555;");
-        VBox.setMargin(pageInfo, new javafx.geometry.Insets(4, 0, 0, 0)); // beri jarak atas
+        VBox.setMargin(pageInfo, new javafx.geometry.Insets(4, 0, 0, 0));
         pageInfo.setMaxWidth(Double.MAX_VALUE);
         pageInfo.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
-        // Tambahkan ke VBox
         customPagination.getChildren().addAll(buttonBox, pageInfo);
     }
+
+    /**
+     * Helper method: menyamakan ukuran tombol page
+     */
+    private void stylePageButton(Button btn) {
+        btn.getStyleClass().add("page-button");
+        btn.setMinWidth(PAGE_BUTTON_WIDTH);
+        btn.setPrefWidth(PAGE_BUTTON_WIDTH);
+        btn.setMaxWidth(PAGE_BUTTON_WIDTH);
+    }
+
 
 
 
