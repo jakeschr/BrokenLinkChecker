@@ -62,7 +62,10 @@
 
         <!-- Spacer & Pagination -->
         <Region HBox.hgrow="ALWAYS"/>
-        <Pagination fx:id="pagination" pageCount="1" maxPageIndicatorCount="10"/>
+        <!-- Pagination Container -->
+        <VBox fx:id="customPagination" spacing="2" alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS"/>
+
+
       </HBox>
 
     </VBox>

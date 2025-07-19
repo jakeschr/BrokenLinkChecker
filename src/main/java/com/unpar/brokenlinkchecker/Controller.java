@@ -7,6 +7,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 
 public class Controller {
 
@@ -20,7 +21,8 @@ public class Controller {
     @FXML private Label pageCountLabel;
     @FXML private Label linkCountLabel;
     @FXML private Label brokenCountLabel;
-    @FXML private Pagination pagination;
+
+    @FXML private VBox customPagination;
 
     @FXML private TableView<LinkResult> resultTable;
     @FXML private TableColumn<LinkResult, Number> colNumber;
@@ -29,22 +31,20 @@ public class Controller {
     @FXML private TableColumn<LinkResult, String> colSourcePage;
     @FXML private TableColumn<LinkResult, String> colAnchorText;
 
-    // OLD
-    private final ObservableList<LinkResult> resultData = FXCollections.observableArrayList();
-    // NEW
     private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();
     private final ObservableList<LinkResult> currentPageResults = FXCollections.observableArrayList();
-    private CheckStatus currentStatus = CheckStatus.IDLE;
 
-    private int totalPages = 0;
+    private int currentPage = 1;
+    private int totalPageCount = 0;
     private int totalLinks = 0;
+    private int totalPages = 0;
+    private static final int ROWS_PER_PAGE = 10;
+    private static final int MAX_PAGE_BUTTONS = 7;
 
-    private static final int ROWS_PER_PAGE = 30;
+    private CheckStatus currentStatus = CheckStatus.IDLE;
 
     @FXML
     public void initialize() {
-        // Hitung rasio total (misal: 3 + 15 + 40 + 17 + 25 = 100)
-        // Binding width proporsional
         double totalRatio = 100.0;
         colNumber.prefWidthProperty().bind(resultTable.widthProperty().multiply(3 / totalRatio));
         colStatus.prefWidthProperty().bind(resultTable.widthProperty().multiply(15 / totalRatio));
@@ -52,14 +52,10 @@ public class Controller {
         colAnchorText.prefWidthProperty().bind(resultTable.widthProperty().multiply(17 / totalRatio));
         colSourcePage.prefWidthProperty().bind(resultTable.widthProperty().multiply(25 / totalRatio));
 
-
-        // Kolom nomor (index + 1)
-        colNumber.setCellValueFactory(cell -> {
-            return javafx.beans.binding.Bindings.createIntegerBinding(
-                    () -> resultTable.getItems().indexOf(cell.getValue()) + 1
-            );
-        });
-
+        colNumber.setCellValueFactory(cell -> javafx.beans.binding.Bindings.createIntegerBinding(() -> {
+            int indexInPage = currentPageResults.indexOf(cell.getValue());
+            return (currentPage - 1) * ROWS_PER_PAGE + indexInPage + 1;
+        }));
 
         techChoiceBox.setItems(FXCollections.observableArrayList("Jsoup", "Playwright"));
         techChoiceBox.getSelectionModel().selectFirst();
@@ -69,44 +65,126 @@ public class Controller {
         colSourcePage.setCellValueFactory(cell -> cell.getValue().sourcePageProperty());
         colAnchorText.setCellValueFactory(cell -> cell.getValue().anchorTextProperty());
 
-        resultTable.setItems(resultData);
-
+        resultTable.setItems(currentPageResults);
         setStatus(CheckStatus.IDLE);
+    }
+
+    private void updateCustomPagination() {
+        customPagination.getChildren().clear();
+
+        // Baris tombol pagination
+        HBox buttonBox = new HBox(5);
+        buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+
+        Button prevButton = new Button("<");
+        prevButton.setDisable(currentPage == 1);
+        prevButton.setOnAction(e -> {
+            if (currentPage > 1) {
+                currentPage--;
+                updateCurrentPage(currentPage - 1);
+                updateCustomPagination();
+            }
+        });
+
+        Button nextButton = new Button(">");
+        nextButton.setDisable(currentPage == totalPageCount || totalPageCount == 0);
+        nextButton.setOnAction(e -> {
+            if (currentPage < totalPageCount) {
+                currentPage++;
+                updateCurrentPage(currentPage - 1);
+                updateCustomPagination();
+            }
+        });
+
+        buttonBox.getChildren().add(prevButton);
+
+        int startPage, endPage;
+        if (totalPageCount <= MAX_PAGE_BUTTONS) {
+            startPage = 1;
+            endPage = totalPageCount;
+        } else {
+            int half = MAX_PAGE_BUTTONS / 2;
+            if (currentPage <= half + 1) {
+                startPage = 1;
+                endPage = MAX_PAGE_BUTTONS;
+            } else if (currentPage >= totalPageCount - half) {
+                startPage = totalPageCount - MAX_PAGE_BUTTONS + 1;
+                endPage = totalPageCount;
+            } else {
+                startPage = currentPage - half;
+                endPage = currentPage + half;
+            }
+        }
+
+        for (int i = startPage; i <= endPage; i++) {
+            Button btn = new Button(String.valueOf(i));
+            btn.getStyleClass().add("page-button");
+            if (i == currentPage) btn.getStyleClass().add("current-page");
+            final int pageIndex = i;
+            btn.setOnAction(e -> {
+                currentPage = pageIndex;
+                updateCurrentPage(pageIndex - 1);
+                updateCustomPagination();
+            });
+            buttonBox.getChildren().add(btn);
+        }
+
+        buttonBox.getChildren().add(nextButton);
+
+        // Label halaman di bawah tombol
+        Label pageInfo = new Label("Halaman " + currentPage + " / " + (totalPageCount == 0 ? 1 : totalPageCount));
+        pageInfo.setStyle("-fx-font-size: 11; -fx-text-fill: #555;");
+        VBox.setMargin(pageInfo, new javafx.geometry.Insets(4, 0, 0, 0)); // beri jarak atas
+        pageInfo.setMaxWidth(Double.MAX_VALUE);
+        pageInfo.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+
+        // Tambahkan ke VBox
+        customPagination.getChildren().addAll(buttonBox, pageInfo);
+    }
+
+
+
+    private void updateCurrentPage(int pageIndex) {
+        int fromIndex = pageIndex * ROWS_PER_PAGE;
+        int toIndex = Math.min(fromIndex + ROWS_PER_PAGE, allResults.size());
+        currentPageResults.setAll(allResults.subList(fromIndex, toIndex));
     }
 
     @FXML
     public void onCheckClick() {
         String url = urlField.getText().trim();
         if (url.isEmpty()) {
-            showAlert("URL kosong", "Silakan masukkan URL terlebih dahulu.");
+            showAlert("Empty URL", "Please enter a URL first.");
             return;
         }
 
-        // Set awal status
         setStatus(CheckStatus.CHECKING);
-        resultData.clear();
         totalPages = 0;
         totalLinks = 0;
-        updateCounts();
 
-        // Dummy data simulasi streaming
+        allResults.clear();
+        currentPageResults.clear();
+
         new Thread(() -> {
             try {
                 for (int i = 1; i <= 150; i++) {
                     if (currentStatus == CheckStatus.STOPPED) break;
 
                     String dummyUrl = "https://example.com/broken-" + i;
-                    LinkResult result = new LinkResult(dummyUrl, "404 Not Found", "https://example.com/page" + i, "klik di sini");
+                    LinkResult result = new LinkResult(dummyUrl, "404 Not Found", "https://example.com/page" + i, "click here");
 
                     Platform.runLater(() -> {
-                        resultData.add(result);
-                        totalPages++;
-                        totalLinks += 5; // misal 5 link per halaman
-                        updateCounts();
-                        statusLabel.setText("Memeriksa halaman ke-" + totalPages);
-                    });
+                        allResults.add(result);
+                        totalPageCount = (int) Math.ceil((double) allResults.size() / ROWS_PER_PAGE);
+                        updateCurrentPage(currentPage - 1);
+                        updateCustomPagination();
 
-                    Thread.sleep(1000); // delay simulasi
+                        totalPages++;
+                        totalLinks += 5;
+                        updateCounts();
+                        statusLabel.setText("Checking page " + totalPages);
+                    });
+                    Thread.sleep(100);
                 }
 
                 Platform.runLater(() -> {
@@ -127,38 +205,38 @@ public class Controller {
 
     @FXML
     public void onExportClick() {
-        showAlert("Export", "Fitur export belum diimplementasikan.");
+        showAlert("Export", "Export feature is not implemented yet.");
     }
 
     private void setStatus(CheckStatus status) {
         this.currentStatus = status;
         switch (status) {
             case IDLE -> {
-                statusLabel.setText("Belum mulai");
+                statusLabel.setText("Not started");
                 checkButton.setDisable(false);
                 stopButton.setDisable(true);
                 exportButton.setDisable(true);
             }
             case CHECKING -> {
-                statusLabel.setText("Sedang memeriksa...");
+                statusLabel.setText("Checking...");
                 checkButton.setDisable(true);
                 stopButton.setDisable(false);
                 exportButton.setDisable(true);
             }
             case COMPLETED -> {
-                statusLabel.setText("Selesai ✔");
+                statusLabel.setText("Completed ✔");
                 checkButton.setDisable(false);
                 stopButton.setDisable(true);
                 exportButton.setDisable(false);
             }
             case STOPPED -> {
-                statusLabel.setText("Dihentikan ⏹");
+                statusLabel.setText("Stopped ⏹");
                 checkButton.setDisable(false);
                 stopButton.setDisable(true);
-                exportButton.setDisable(resultData.isEmpty());
+                exportButton.setDisable(false);
             }
             case ERROR -> {
-                statusLabel.setText("Terjadi kesalahan ❌");
+                statusLabel.setText("Error ❌");
                 checkButton.setDisable(false);
                 stopButton.setDisable(true);
                 exportButton.setDisable(true);
@@ -170,7 +248,7 @@ public class Controller {
         pageCountLabel.setText(String.valueOf(totalPages));
         linkCountLabel.setText(String.valueOf(totalLinks));
         brokenCountLabel.setText(String.valueOf(
-                resultData.stream().filter(l -> l.getStatus().startsWith("4") || l.getStatus().startsWith("5")).count()
+                allResults.stream().filter(l -> l.getStatus().startsWith("4") || l.getStatus().startsWith("5")).count()
         ));
     }
 

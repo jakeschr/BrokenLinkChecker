@@ -21,14 +21,29 @@
 }
 
 
+/* ============================================================ */
 
+.page-button {
+    -fx-padding: 4 10;
+    -fx-background-color: #e0e0e0;
+    -fx-border-color: #ccc;
+    -fx-border-radius: 3;
+    -fx-cursor: hand;
+}
+.current-page {
+    -fx-background-color: #4285f4;
+    -fx-text-fill: white;
+}
+
+
+/* ============================================================ */
 
 #colNumber {
     -fx-alignment: CENTER;
 }
 
-
 /* ============================================================ */
+
 
 /* Gaya umum semua button */
 .button {
