@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.unpar.brokenlinkchecker.Controller">
+
+  <!-- Bagian Atas: Input dan Tombol -->
+  <top>
+    <VBox spacing="10">
+      <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+      </padding>
+
+      <HBox spacing="10">
+
+        <!--  Input link  -->
+        <Label text="Initial Link:"/>
+        <TextField fx:id="urlField" HBox.hgrow="ALWAYS"/>
+
+        <!--  Dropdown teknologi (librari)  -->
+        <Label text="Technology:"/>
+        <ComboBox fx:id="techChoiceBox"/>
+
+        <!--  Tombol Cek  -->
+        <Button fx:id="checkButton" text="Check" onAction="#onCheckClick"/>
+        <!--  Tombol Top  -->
+        <Button fx:id="stopButton" text="Stop" onAction="#onStopClick"/>
+        <!--  Tombol Export  -->
+        <Button fx:id="exportButton" text="Export" onAction="#onExportClick"/>
+      </HBox>
+
+      <HBox spacing="10" alignment="CENTER_LEFT">
+        <!-- Ringkasan dalam bentuk GridPane -->
+        <GridPane fx:id="summaryGrid" gridLinesVisible="true">
+          <columnConstraints>
+            <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="150"/>
+            <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="150"/>
+            <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="150"/>
+            <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="150"/>
+          </columnConstraints>
+          <rowConstraints>
+            <RowConstraints valignment="CENTER"/>
+            <RowConstraints valignment="CENTER"/>
+          </rowConstraints>
+
+          <!-- Header -->
+          <Label text="Status" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+          <Label text="Total Halaman" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+          <Label text="Total Tautan" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+          <Label text="Tautan Rusak" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
+
+          <!-- Nilai -->
+          <Label fx:id="statusLabel" text="Belum mulai" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+          <Label fx:id="pageCountLabel" text="0" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+          <Label fx:id="linkCountLabel" text="0" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
+          <Label fx:id="brokenCountLabel" text="0" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
+        </GridPane>
+
+
+        <!-- Spacer & Pagination -->
+        <Region HBox.hgrow="ALWAYS"/>
+        <Pagination fx:id="pagination" pageCount="1" maxPageIndicatorCount="10"/>
+      </HBox>
+
+    </VBox>
+  </top>
+
+  <!-- Bagian Tengah: Tabel Hasil -->
+  <center>
+    <TableView fx:id="resultTable" VBox.vgrow="ALWAYS">
+      <columns>
+        <TableColumn fx:id="colNumber" text="No"/>
+        <TableColumn fx:id="colStatus" text="Status"/>
+        <TableColumn fx:id="colBrokenLink" text="Broken Link"/>
+        <TableColumn fx:id="colAnchorText" text="Link Text"/>
+        <TableColumn fx:id="colSourcePage" text="Source Page"/>
+      </columns>
+    </TableView>
+  </center>
+
+</BorderPane>
