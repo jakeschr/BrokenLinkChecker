@@ -2,6 +2,11 @@ package com.unpar.brokenlinkchecker;
 
 import com.unpar.brokenlinkchecker.model.CheckStatus;
 import com.unpar.brokenlinkchecker.model.LinkResult;
+
+import com.unpar.brokenlinkchecker.service.Crawler;
+import com.unpar.brokenlinkchecker.service.HttpStatusChecker;
+import com.unpar.brokenlinkchecker.service.JsoupCrawler;
+import com.unpar.brokenlinkchecker.service.LinkCheckerService;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,21 +15,30 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+/**
+ * Controller utama untuk aplikasi BrokenLinkChecker.
+ * Mengelola interaksi antara UI JavaFX (view.fxml) dan logika pemeriksaan tautan.
+ */
 public class Controller {
 
-    @FXML private TextField urlField;
-    @FXML private ComboBox<String> techChoiceBox;
-    @FXML private Button checkButton;
-    @FXML private Button stopButton;
-    @FXML private Button exportButton;
+    // ===== Komponen UI dari view.fxml =====
 
+    @FXML private TextField urlField; // Input URL awal yang akan dicek
+    @FXML private ComboBox<String> techChoiceBox; // Pilihan teknologi yang digunakan (Jsoup atau Playwright)
+    @FXML private Button checkButton; // Tombol untuk memulai pemeriksaan tautan
+    @FXML private Button stopButton; // Tombol untuk menghentikan proses pemeriksaan
+    @FXML private Button exportButton; // Tombol untuk mengekspor hasil (belum diimplementasikan)
+
+    // Label-label untuk menampilkan ringkasan status
     @FXML private Label statusLabel;
     @FXML private Label pageCountLabel;
     @FXML private Label linkCountLabel;
     @FXML private Label brokenCountLabel;
 
+    // Kontainer VBox untuk menampilkan pagination kustom
     @FXML private VBox customPagination;
 
+    // Komponen tabel hasil pemeriksaan tautan
     @FXML private TableView<LinkResult> resultTable;
     @FXML private TableColumn<LinkResult, Number> colNumber;
     @FXML private TableColumn<LinkResult, String> colBrokenLink;
@@ -32,19 +46,40 @@ public class Controller {
     @FXML private TableColumn<LinkResult, String> colSourcePage;
     @FXML private TableColumn<LinkResult, String> colAnchorText;
 
+    // ===== Variabel internal aplikasi =====
+
+    private LinkCheckerService linkCheckerService;
+
+
+    // Menyimpan semua hasil link (seluruh data)
     private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();
+    // Menyimpan hasil yang ditampilkan di halaman saat ini (pagination)
     private final ObservableList<LinkResult> currentPageResults = FXCollections.observableArrayList();
 
+    // Data terkait pagination
     private int currentPage = 1;
     private int totalPageCount = 0;
+
+    // Data statistik
     private int totalLinks = 0;
     private int totalPages = 0;
 
+    // Status saat ini (IDLE, CHECKING, COMPLETED, dll.)
     private CheckStatus currentStatus = CheckStatus.IDLE;
 
+    // ===== Konstanta Pagination =====
+    private static final int MAX_PAGE_BUTTONS = 5; // Jumlah maksimal tombol halaman yang ditampilkan
+    private static final int ROWS_PER_PAGE = 10;   // Jumlah baris per halaman
+    private static final double PAGE_BUTTON_WIDTH = 40; // Lebar tombol halaman
 
+
+    /**
+     * Method ini dipanggil secara otomatis saat controller dimuat oleh JavaFX.
+     * Bertugas untuk menginisialisasi komponen UI, seperti kolom tabel dan dropdown pilihan.
+     */
     @FXML
     public void initialize() {
+        // Atur lebar kolom tabel secara proporsional
         double totalRatio = 100.0;
         colNumber.prefWidthProperty().bind(resultTable.widthProperty().multiply(3 / totalRatio));
         colStatus.prefWidthProperty().bind(resultTable.widthProperty().multiply(15 / totalRatio));
@@ -52,26 +87,142 @@ public class Controller {
         colAnchorText.prefWidthProperty().bind(resultTable.widthProperty().multiply(17 / totalRatio));
         colSourcePage.prefWidthProperty().bind(resultTable.widthProperty().multiply(25 / totalRatio));
 
+        // Set kolom nomor baris dengan perhitungan dinamis berdasarkan pagination
         colNumber.setCellValueFactory(cell -> javafx.beans.binding.Bindings.createIntegerBinding(() -> {
             int indexInPage = currentPageResults.indexOf(cell.getValue());
             return (currentPage - 1) * ROWS_PER_PAGE + indexInPage + 1;
         }));
 
+        // Set pilihan teknologi yang tersedia
         techChoiceBox.setItems(FXCollections.observableArrayList("Jsoup", "Playwright"));
-        techChoiceBox.getSelectionModel().selectFirst();
+        techChoiceBox.getSelectionModel().selectFirst(); // Default: Jsoup
 
+        // Hubungkan properti kolom tabel dengan data LinkResult
         colBrokenLink.setCellValueFactory(cell -> cell.getValue().brokenLinkProperty());
         colStatus.setCellValueFactory(cell -> cell.getValue().statusProperty());
         colSourcePage.setCellValueFactory(cell -> cell.getValue().sourcePageProperty());
         colAnchorText.setCellValueFactory(cell -> cell.getValue().anchorTextProperty());
 
+        // Tampilkan halaman pertama
         resultTable.setItems(currentPageResults);
+
+        // Set status awal
         setStatus(CheckStatus.IDLE);
     }
 
-    private static final int MAX_PAGE_BUTTONS = 5; // ✅ Ganti dari 7 jadi 5
-    private static final int ROWS_PER_PAGE = 10;
-    private static final double PAGE_BUTTON_WIDTH = 40; // ✅ Ukuran tetap untuk semua tombol
+
+    @FXML
+    public void onCheckClick() {
+        String url = urlField.getText().trim();
+        if (url.isEmpty()) {
+            showAlert("Empty URL", "Please enter a URL first.");
+            return;
+        }
+
+        String selectedTech = techChoiceBox.getSelectionModel().getSelectedItem();
+
+        // Tentukan teknologi crawling yang digunakan
+        Crawler crawler;
+        if ("Jsoup".equalsIgnoreCase(selectedTech)) {
+            crawler = new JsoupCrawler();
+        } else {
+            showAlert("Error", "Playwright belum didukung di mode modular.");
+            return;
+        }
+
+        linkCheckerService = new LinkCheckerService(crawler, new HttpStatusChecker());
+
+        // Reset data tampilan
+        setStatus(CheckStatus.CHECKING);
+        allResults.clear();
+        currentPageResults.clear();
+        currentPage = 1;
+        totalLinks = 0;
+        totalPages = 0;
+        updateCurrentPage(0);
+        updateCustomPagination();
+        updateCounts();
+
+        // Jalankan proses di thread terpisah (agar UI tidak freeze)
+        new Thread(() -> {
+            try {
+                linkCheckerService.run(url, result -> {
+                    Platform.runLater(() -> {
+                        allResults.add(result);
+                        totalPageCount = (int) Math.ceil((double) allResults.size() / ROWS_PER_PAGE);
+                        updateCurrentPage(currentPage - 1);
+                        updateCustomPagination();
+                        updateCounts();
+                    });
+                });
+
+                Platform.runLater(() -> setStatus(CheckStatus.COMPLETED));
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> setStatus(CheckStatus.ERROR));
+            }
+        }).start();
+    }
+
+
+    @FXML
+    public void onCheckClick1() {
+        String url = urlField.getText().trim();
+        if (url.isEmpty()) {
+            showAlert("Empty URL", "Please enter a URL first.");
+            return;
+        }
+
+        setStatus(CheckStatus.CHECKING);
+        totalPages = 0;
+        totalLinks = 0;
+
+        allResults.clear();
+        currentPageResults.clear();
+
+        new Thread(() -> {
+            try {
+                for (int i = 1; i <= 150; i++) {
+                    if (currentStatus == CheckStatus.STOPPED) break;
+
+                    String dummyUrl = "https://example.com/broken-" + i;
+                    LinkResult result = new LinkResult(dummyUrl, "404 Not Found", "https://example.com/page" + i, "click here");
+
+                    Platform.runLater(() -> {
+                        allResults.add(result);
+                        totalPageCount = (int) Math.ceil((double) allResults.size() / ROWS_PER_PAGE);
+                        updateCurrentPage(currentPage - 1);
+                        updateCustomPagination();
+
+                        totalPages++;
+                        totalLinks += 5;
+                        updateCounts();
+                        statusLabel.setText("Checking page " + totalPages);
+                    });
+                    Thread.sleep(100);
+                }
+
+                Platform.runLater(() -> {
+                    if (currentStatus != CheckStatus.STOPPED) {
+                        setStatus(CheckStatus.COMPLETED);
+                    }
+                });
+            } catch (InterruptedException e) {
+                Platform.runLater(() -> setStatus(CheckStatus.ERROR));
+            }
+        }).start();
+    }
+
+    @FXML
+    public void onStopClick() {
+        setStatus(CheckStatus.STOPPED);
+    }
+
+    @FXML
+    public void onExportClick() {
+        showAlert("Export", "Export feature is not implemented yet.");
+    }
 
     private void updateCustomPagination() {
         customPagination.getChildren().clear();
@@ -149,9 +300,6 @@ public class Controller {
         customPagination.getChildren().addAll(buttonBox, pageInfo);
     }
 
-    /**
-     * Helper method: menyamakan ukuran tombol page
-     */
     private void stylePageButton(Button btn) {
         btn.getStyleClass().add("page-button");
         btn.setMinWidth(PAGE_BUTTON_WIDTH);
@@ -159,71 +307,10 @@ public class Controller {
         btn.setMaxWidth(PAGE_BUTTON_WIDTH);
     }
 
-
-
-
     private void updateCurrentPage(int pageIndex) {
         int fromIndex = pageIndex * ROWS_PER_PAGE;
         int toIndex = Math.min(fromIndex + ROWS_PER_PAGE, allResults.size());
         currentPageResults.setAll(allResults.subList(fromIndex, toIndex));
-    }
-
-    @FXML
-    public void onCheckClick() {
-        String url = urlField.getText().trim();
-        if (url.isEmpty()) {
-            showAlert("Empty URL", "Please enter a URL first.");
-            return;
-        }
-
-        setStatus(CheckStatus.CHECKING);
-        totalPages = 0;
-        totalLinks = 0;
-
-        allResults.clear();
-        currentPageResults.clear();
-
-        new Thread(() -> {
-            try {
-                for (int i = 1; i <= 150; i++) {
-                    if (currentStatus == CheckStatus.STOPPED) break;
-
-                    String dummyUrl = "https://example.com/broken-" + i;
-                    LinkResult result = new LinkResult(dummyUrl, "404 Not Found", "https://example.com/page" + i, "click here");
-
-                    Platform.runLater(() -> {
-                        allResults.add(result);
-                        totalPageCount = (int) Math.ceil((double) allResults.size() / ROWS_PER_PAGE);
-                        updateCurrentPage(currentPage - 1);
-                        updateCustomPagination();
-
-                        totalPages++;
-                        totalLinks += 5;
-                        updateCounts();
-                        statusLabel.setText("Checking page " + totalPages);
-                    });
-                    Thread.sleep(100);
-                }
-
-                Platform.runLater(() -> {
-                    if (currentStatus != CheckStatus.STOPPED) {
-                        setStatus(CheckStatus.COMPLETED);
-                    }
-                });
-            } catch (InterruptedException e) {
-                Platform.runLater(() -> setStatus(CheckStatus.ERROR));
-            }
-        }).start();
-    }
-
-    @FXML
-    public void onStopClick() {
-        setStatus(CheckStatus.STOPPED);
-    }
-
-    @FXML
-    public void onExportClick() {
-        showAlert("Export", "Export feature is not implemented yet.");
     }
 
     private void setStatus(CheckStatus status) {

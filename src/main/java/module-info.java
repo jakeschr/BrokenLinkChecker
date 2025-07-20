@@ -6,6 +6,10 @@ module com.unpar.brokenlinkchecker {
     requires net.synedra.validatorfx;
     requires org.kordamp.ikonli.javafx;
 
+    // Modul tambahan dari pustaka pihak ketiga
+    requires org.jsoup;
+//    requires com.microsoft.playwright;
+
     opens com.unpar.brokenlinkchecker to javafx.fxml;
     exports com.unpar.brokenlinkchecker;
 }
