@@ -111,63 +111,63 @@ public class Controller {
     }
 
 
+//    @FXML
+//    public void onCheckClick() {
+//        String url = urlField.getText().trim();
+//        if (url.isEmpty()) {
+//            showAlert("Empty URL", "Please enter a URL first.");
+//            return;
+//        }
+//
+//        String selectedTech = techChoiceBox.getSelectionModel().getSelectedItem();
+//
+//        // Tentukan teknologi crawling yang digunakan
+//        Crawler crawler;
+//        if ("Jsoup".equalsIgnoreCase(selectedTech)) {
+//            crawler = new JsoupCrawler();
+//        } else {
+//            showAlert("Error", "Playwright belum didukung di mode modular.");
+//            return;
+//        }
+//
+//        linkCheckerService = new LinkCheckerService(crawler, new HttpStatusChecker());
+//
+//        // Reset data tampilan
+//        setStatus(CheckStatus.CHECKING);
+//        allResults.clear();
+//        currentPageResults.clear();
+//        currentPage = 1;
+//        totalLinks = 0;
+//        totalPages = 0;
+//        updateCurrentPage(0);
+//        updateCustomPagination();
+//        updateCounts();
+//
+//        // Jalankan proses di thread terpisah (agar UI tidak freeze)
+//        new Thread(() -> {
+//            try {
+//                linkCheckerService.run(url, result -> {
+//                    Platform.runLater(() -> {
+//                        allResults.add(result);
+//                        totalPageCount = (int) Math.ceil((double) allResults.size() / ROWS_PER_PAGE);
+//                        updateCurrentPage(currentPage - 1);
+//                        updateCustomPagination();
+//                        updateCounts();
+//                    });
+//                });
+//
+//                Platform.runLater(() -> setStatus(CheckStatus.COMPLETED));
+//
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                Platform.runLater(() -> setStatus(CheckStatus.ERROR));
+//            }
+//        }).start();
+//    }
+
+
     @FXML
     public void onCheckClick() {
-        String url = urlField.getText().trim();
-        if (url.isEmpty()) {
-            showAlert("Empty URL", "Please enter a URL first.");
-            return;
-        }
-
-        String selectedTech = techChoiceBox.getSelectionModel().getSelectedItem();
-
-        // Tentukan teknologi crawling yang digunakan
-        Crawler crawler;
-        if ("Jsoup".equalsIgnoreCase(selectedTech)) {
-            crawler = new JsoupCrawler();
-        } else {
-            showAlert("Error", "Playwright belum didukung di mode modular.");
-            return;
-        }
-
-        linkCheckerService = new LinkCheckerService(crawler, new HttpStatusChecker());
-
-        // Reset data tampilan
-        setStatus(CheckStatus.CHECKING);
-        allResults.clear();
-        currentPageResults.clear();
-        currentPage = 1;
-        totalLinks = 0;
-        totalPages = 0;
-        updateCurrentPage(0);
-        updateCustomPagination();
-        updateCounts();
-
-        // Jalankan proses di thread terpisah (agar UI tidak freeze)
-        new Thread(() -> {
-            try {
-                linkCheckerService.run(url, result -> {
-                    Platform.runLater(() -> {
-                        allResults.add(result);
-                        totalPageCount = (int) Math.ceil((double) allResults.size() / ROWS_PER_PAGE);
-                        updateCurrentPage(currentPage - 1);
-                        updateCustomPagination();
-                        updateCounts();
-                    });
-                });
-
-                Platform.runLater(() -> setStatus(CheckStatus.COMPLETED));
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> setStatus(CheckStatus.ERROR));
-            }
-        }).start();
-    }
-
-
-    @FXML
-    public void onCheckClick1() {
         String url = urlField.getText().trim();
         if (url.isEmpty()) {
             showAlert("Empty URL", "Please enter a URL first.");
