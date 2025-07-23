@@ -17,11 +17,11 @@ import javafx.scene.layout.VBox;
 
 /**
  * Controller utama untuk aplikasi BrokenLinkChecker.
- * Mengelola interaksi antara UI JavaFX (view.fxml) dan logika pemeriksaan tautan.
+ * Mengelola interaksi antara UI JavaFX (main.fxml) dan logika pemeriksaan tautan.
  */
 public class Controller {
 
-    // ===== Komponen UI dari view.fxml =====
+    // ===== Komponen UI dari main.fxml =====
 
     @FXML private TextField urlField; // Input URL awal yang akan dicek
     @FXML private ComboBox<String> techChoiceBox; // Pilihan teknologi yang digunakan (Jsoup atau Playwright)

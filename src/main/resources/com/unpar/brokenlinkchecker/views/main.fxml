@@ -5,7 +5,8 @@
 <?import javafx.geometry.Insets?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.unpar.brokenlinkchecker.Controller">
+            fx:controller="com.unpar.brokenlinkchecker.Controller"
+            stylesheets="@../styles/main.css">
 
   <!-- Bagian Atas: Input dan Tombol -->
   <top>
@@ -34,7 +35,7 @@
 
       <HBox spacing="10" alignment="CENTER_LEFT">
         <!-- Ringkasan dalam bentuk GridPane -->
-        <GridPane fx:id="summaryGrid" gridLinesVisible="true">
+        <GridPane gridLinesVisible="true">
           <columnConstraints>
             <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="150"/>
             <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="150"/>

@@ -7,10 +7,8 @@ import javafx.stage.Stage;
 public class Application extends javafx.application.Application {
     @Override
     public void start(Stage stage) throws Exception {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("view.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("views/main.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
-        scene.getStylesheets().add(getClass().getResource("style.css").toExternalForm());
-
         stage.setTitle("BrokenLink Checker");
         stage.setScene(scene);
 
