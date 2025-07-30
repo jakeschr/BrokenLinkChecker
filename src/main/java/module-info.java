@@ -8,6 +8,7 @@ module com.unpar.brokenlinkchecker {
 
     // Modul tambahan dari pustaka pihak ketiga
     requires org.jsoup;
+    requires java.net.http;
 //    requires com.microsoft.playwright;
 
     opens com.unpar.brokenlinkchecker to javafx.fxml;

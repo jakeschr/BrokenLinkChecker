@@ -1,9 +1,10 @@
 package com.unpar.brokenlinkchecker;
 
+import com.unpar.brokenlinkchecker.model.CrawlResult;
 import com.unpar.brokenlinkchecker.model.ExecutionStatus;
 import com.unpar.brokenlinkchecker.model.LinkResult;
-
-import com.unpar.brokenlinkchecker.service.LinkCheckerService;
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -11,234 +12,316 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.util.function.Consumer;
+
+/**
+ * Controller utama untuk menangani interaksi UI aplikasi BrokenLinkChecker.
+ * Bertanggung jawab untuk menginisialisasi tabel, menangani klik tombol, dan
+ * menerima data dari Service secara streaming untuk ditampilkan ke tabel.
+ */
 public class Controller {
-    // ============================== Komponen GUI =================================== //
-    @FXML private TextField urlField;                               // Input URL awal yang akan dicek pengguna
-    @FXML private ComboBox<String> techChoiceBox;                   // Pilihan teknologi crawling: "Jsoup" atau "Playwright"
-    @FXML private Button checkButton;                               // Tombol untuk memulai proses pemeriksaan tautan
-    @FXML private Button stopButton;                                // Tombol untuk menghentikan proses pemeriksaan yang sedang berjalan
-    @FXML private Button exportButton;                              // Tombol untuk mengekspor hasil pemeriksaan (belum diimplementasikan)
-    @FXML private Label statusLabel;                                // Label status yang menampilkan keadaan proses (e.g. "Checking...", "Completed")
-    @FXML private Label pageCountLabel;                             // Label jumlah total halaman yang berhasil dicrawl
-    @FXML private Label linkCountLabel;                             // Label jumlah total tautan (baik halaman maupun umum) yang ditemukan
-    @FXML private Label brokenCountLabel;                           // Label jumlah total tautan rusak
-    @FXML private VBox customPagination;                            // Container VBox untuk pagination kustom di bawah tabel hasil
-    @FXML private TableView<LinkResult> resultTable;                // Tabel utama untuk menampilkan hasil pemeriksaan semua tautan
-    @FXML private TableColumn<LinkResult, Number> colNumber;        // Kolom nomor urut (otomatis berdasarkan pagination)
-    @FXML private TableColumn<LinkResult, String> colBrokenLink;    // Kolom berisi tautan rusak
-    @FXML private TableColumn<LinkResult, String> colStatus;        // Kolom berisi status dari URL (kode HTTP atau error lainnya)
-    @FXML private TableColumn<LinkResult, String> colSourcePage;    // Kolom berisi url halaman sumber tautan rusak ditemukan
-    @FXML private TableColumn<LinkResult, String> colAnchorText;    // Kolom berisi teks anchor (teks yang diklik oleh pengguna)
 
+    // ===================== Komponen FXML (terhubung ke main.fxml) =====================
+    @FXML private TextField seedUrl;                        // Input URL awal
+    @FXML private ComboBox<String> techChoiceBox;           // Dropdown pilihan teknologi (Jsoup/Playwright)
+    @FXML private Button checkButton;                       // Tombol untuk mulai pengecekan
+    @FXML private Button stopButton;                        // Tombol untuk menghentikan pengecekan
+    @FXML private Button exportButton;                      // Tombol untuk ekspor hasil (belum diimplementasikan)
+    @FXML private Label statusLabel;                        // Label status (IDLE, CHECKING, dsb)
+    @FXML private Label pageCountLabel;                     // Label total halaman yang dikunjungi
+    @FXML private Label linkCountLabel;                     // Label total semua link yang ditemukan
+    @FXML private Label brokenCountLabel;                   // Label total link rusak
+    @FXML private VBox customPagination;                    // Komponen pagination khusus (bukan Pagination bawaan JavaFX)
+    @FXML private TableView<LinkResult> resultTable;        // Tabel hasil link rusak
+    @FXML private TableColumn<LinkResult, Number> colNumber;       // Kolom nomor
+    @FXML private TableColumn<LinkResult, String> colBrokenLink;   // Kolom link rusak
+    @FXML private TableColumn<LinkResult, String> colStatus;       // Kolom status HTTP
+    @FXML private TableColumn<LinkResult, String> colSourcePage;   // Kolom halaman sumber
+    @FXML private TableColumn<LinkResult, String> colAnchorText;   // Kolom teks anchor
 
-    // ============================== Variabel Internal =================================== //
-    // Service utama untuk menjalankan crawling dan pengecekan link
-    private LinkCheckerService linkCheckerService;
+    // ===================== Variabel Internal =====================
+    private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();       // Semua hasil link rusak
+    private final ObservableList<LinkResult> currentPageResults = FXCollections.observableArrayList(); // Subset hasil untuk ditampilkan per halaman
 
-    // Menyimpan seluruh hasil pemeriksaan tautan (tanpa filter pagination)
-    private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();
+    private Service service;                                  // Instance service backend
+    private ExecutionStatus currentStatus = ExecutionStatus.IDLE;  // Status aplikasi saat ini
+    private CrawlResult lastCrawlResult = null;               // Menyimpan hasil akhir crawling
 
-    // Menyimpan hasil yang ditampilkan pada halaman saat ini (digunakan oleh TableView untuk pagination)
-    private final ObservableList<LinkResult> currentPageResults = FXCollections.observableArrayList();
+    private int currentPage = 1;                              // Halaman saat ini dalam pagination
+    private int totalPageCount = 0;                           // Total halaman dalam pagination
+    private static final int ROWS_PER_PAGE = 25;              // Jumlah baris per halaman
+    private static final int MAX_PAGE_BUTTONS = 5;            // Tombol navigasi maksimal yang ditampilkan
+    private static final double PAGE_BUTTON_WIDTH = 40;       // Lebar tombol halaman
 
-    private ExecutionStatus currentStatus = ExecutionStatus.IDLE;       // Status proses aplikasi saat ini (IDLE, CHECKING, COMPLETED, dll.)
-    private int totalLinks = 0;                                         // Jumlah total tautan yang ditemukan (baik internal maupun umum)
-    private int totalPages = 0;                                         // Jumlah total halaman internal yang berhasil dicrawl
-    private int currentPage = 1;                                        // Halaman saat ini dalam tampilan tabel (mulai dari 1)
-    private int totalPageCount = 0;                                     // Jumlah total halaman berdasarkan ukuran data dan ROWS_PER_PAGE
-    private static final int MAX_PAGE_BUTTONS = 5;                      // Jumlah maksimal tombol halaman yang ditampilkan pada pagination kustom
-    private static final int ROWS_PER_PAGE = 10;                        // Jumlah baris hasil yang ditampilkan per halaman tabel
-    private static final double PAGE_BUTTON_WIDTH = 40;                 // Lebar tetap untuk setiap tombol pagination (dalam piksel)
-
-
+    /**
+     * Dipanggil otomatis setelah FXML dimuat. Inisialisasi awal komponen tabel dan dropdown.
+     */
     @FXML
     public void initialize() {
-        // Atur lebar kolom tabel secara proporsional
+        setupTableColumns();      // Atur lebar kolom dan binding isi tabel
+        setupTechChoiceBox();     // Atur pilihan dropdown teknologi
+        resultTable.setItems(currentPageResults);  // Sambungkan data ke tabel
+        setStatus(ExecutionStatus.IDLE);           // Set status awal
+    }
+
+    /**
+     * Menentukan lebar dan isi kolom tabel hasil
+     */
+    private void setupTableColumns() {
         double totalRatio = 100.0;
+
+        // Bind ukuran kolom agar proporsional dengan total lebar tabel
         colNumber.prefWidthProperty().bind(resultTable.widthProperty().multiply(3 / totalRatio));
         colStatus.prefWidthProperty().bind(resultTable.widthProperty().multiply(15 / totalRatio));
         colBrokenLink.prefWidthProperty().bind(resultTable.widthProperty().multiply(40 / totalRatio));
         colAnchorText.prefWidthProperty().bind(resultTable.widthProperty().multiply(17 / totalRatio));
         colSourcePage.prefWidthProperty().bind(resultTable.widthProperty().multiply(25 / totalRatio));
 
-        // Set kolom nomor baris dengan perhitungan dinamis berdasarkan pagination
-        colNumber.setCellValueFactory(cell -> javafx.beans.binding.Bindings.createIntegerBinding(() -> {
-            int indexInPage = currentPageResults.indexOf(cell.getValue());
-            return (currentPage - 1) * ROWS_PER_PAGE + indexInPage + 1;
+        // Mengatur isi tiap kolom
+        colNumber.setCellValueFactory(cell -> Bindings.createIntegerBinding(() -> {
+            int index = currentPageResults.indexOf(cell.getValue());
+            return (currentPage - 1) * ROWS_PER_PAGE + index + 1;
         }));
-
-        // Set pilihan teknologi yang tersedia
-        techChoiceBox.setItems(FXCollections.observableArrayList("Jsoup", "Playwright"));
-        techChoiceBox.getSelectionModel().selectFirst(); // Default: Jsoup
-
-        // Hubungkan properti kolom tabel dengan data LinkResult
         colBrokenLink.setCellValueFactory(cell -> cell.getValue().brokenLinkProperty());
         colStatus.setCellValueFactory(cell -> cell.getValue().statusProperty());
         colSourcePage.setCellValueFactory(cell -> cell.getValue().sourcePageProperty());
         colAnchorText.setCellValueFactory(cell -> cell.getValue().anchorTextProperty());
-
-        // Tampilkan halaman pertama
-        resultTable.setItems(currentPageResults);
-
-        // Set status awal
-        setStatus(ExecutionStatus.IDLE);
     }
 
+    /**
+     * Inisialisasi pilihan teknologi crawling
+     */
+    private void setupTechChoiceBox() {
+        techChoiceBox.setItems(FXCollections.observableArrayList("Jsoup", "Playwright"));
+        techChoiceBox.getSelectionModel().selectFirst(); // Pilih default: Jsoup
+    }
+
+    /**
+     * Event handler saat tombol "Check" diklik
+     */
     @FXML
     public void onCheckClick() {
+        String url = seedUrl.getText();        // Ambil input URL dari TextField
+        String tech = techChoiceBox.getValue(); // Ambil pilihan teknologi
 
+        if (url == null || url.isBlank()) {
+            showAlert("Input Error", "Seed URL tidak boleh kosong.");
+            return;
+        }
+
+        // Tambahkan http:// jika user tidak menulis protokol
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://" + url;
+        }
+
+        resetData();                           // Bersihkan semua data sebelumnya
+        setStatus(ExecutionStatus.CHECKING);   // Set status menjadi "Checking..."
+
+        service = new Service();               // Buat instance baru dari service
+        service.setOnLinkResult(createStreamingConsumer());         // Untuk menerima hasil link rusak saat crawling
+        service.setOnComplete(this::onCrawlingComplete);            // Callback ketika crawling selesai
+        service.setOnError(this::onCrawlingError);                  // Callback ketika error
+        service.setOnPageCountUpdate(this::updatePageCount);       // Update label jumlah halaman
+        service.setOnTotalLinkUpdate(this::updateTotalLinkCount);  // Update label jumlah tautan total
+        service.setOnBrokenLinkUpdate(this::updateBrokenLinkCount);// Update label jumlah tautan rusak
+
+        service.startCrawling(url, tech);      // Mulai crawling
     }
 
+    /**
+     * Event handler saat tombol "Stop" diklik
+     */
     @FXML
     public void onStopClick() {
-        setStatus(ExecutionStatus.STOPPED);
+        if (service != null) {
+            service.stop();   // Beri sinyal ke thread untuk berhenti
+        }
+        setStatus(ExecutionStatus.STOPPED); // Ubah status menjadi STOPPED
     }
 
+    /**
+     * Event handler tombol "Export"
+     */
     @FXML
     public void onExportClick() {
-        showAlert("Export", "Export feature is not implemented yet.");
+        showAlert("Export", "Fitur export belum diimplementasikan.");
     }
 
+    /**
+     * Callback streaming per tautan rusak dari service
+     */
+    private Consumer<LinkResult> createStreamingConsumer() {
+        return result -> Platform.runLater(() -> {
+            allResults.add(result);  // Tambahkan ke daftar hasil
+            updatePagination();      // Perbarui tampilan pagination
+        });
+    }
+
+    /**
+     * Callback saat crawling selesai
+     */
+    private void onCrawlingComplete(CrawlResult result) {
+        Platform.runLater(() -> {
+            this.lastCrawlResult = result;  // Simpan hasil akhir crawling
+            setStatus(ExecutionStatus.COMPLETED); // Ganti status
+        });
+    }
+
+    /**
+     * Callback saat crawling gagal/error
+     */
+    private void onCrawlingError(String errorMessage) {
+        Platform.runLater(() -> {
+            setStatus(ExecutionStatus.ERROR);    // Set status error
+            showAlert("Error", "Terjadi kesalahan saat crawling: " + errorMessage); // Tampilkan error
+        });
+    }
+
+    /**
+     * Atur label dan tombol berdasarkan status aplikasi
+     */
     private void setStatus(ExecutionStatus status) {
         this.currentStatus = status;
+
         switch (status) {
-            case IDLE:
+            case IDLE -> {
                 statusLabel.setText("Not started");
                 checkButton.setDisable(false);
                 stopButton.setDisable(true);
                 exportButton.setDisable(true);
-                break;
-            case CHECKING:
+            }
+            case CHECKING -> {
                 statusLabel.setText("Checking...");
                 checkButton.setDisable(true);
                 stopButton.setDisable(false);
                 exportButton.setDisable(true);
-                break;
-            case COMPLETED:
+            }
+            case COMPLETED -> {
                 statusLabel.setText("Completed ✔");
                 checkButton.setDisable(false);
                 stopButton.setDisable(true);
                 exportButton.setDisable(false);
-                break;
-            case STOPPED:
+            }
+            case STOPPED -> {
                 statusLabel.setText("Stopped ⏹");
                 checkButton.setDisable(false);
                 stopButton.setDisable(true);
                 exportButton.setDisable(false);
-                break;
-            case ERROR:
+            }
+            case ERROR -> {
                 statusLabel.setText("Error ❌");
                 checkButton.setDisable(false);
                 stopButton.setDisable(true);
                 exportButton.setDisable(true);
-                break;
-            default:
-                showAlert("Execution Status", "Unsupported execution status: " + status + ".");
+            }
         }
     }
 
-    private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    /**
+     * Reset seluruh data dan tampilan sebelum proses baru
+     */
+    private void resetData() {
+        allResults.clear();          // Kosongkan semua hasil
+        currentPage = 1;
+        totalPageCount = 0;
+        pageCountLabel.setText("0");
+        linkCountLabel.setText("0");
+        brokenCountLabel.setText("0");
+        updatePagination();          // Bersihkan pagination
+        lastCrawlResult = null;      // Reset hasil crawling terakhir
     }
 
-    private void updateCounts() {
-        pageCountLabel.setText(String.valueOf(totalPages));
-        linkCountLabel.setText(String.valueOf(totalLinks));
-        brokenCountLabel.setText(String.valueOf(
-                allResults.stream().filter(l -> l.getStatus().startsWith("4") || l.getStatus().startsWith("5")).count()
-        ));
+    /**
+     * Update label total halaman secara real-time
+     */
+    private void updatePageCount(int count) {
+        Platform.runLater(() -> pageCountLabel.setText(String.valueOf(count)));
     }
-    
+
+    /**
+     * Update label total link secara real-time
+     */
+    private void updateTotalLinkCount(int count) {
+        Platform.runLater(() -> linkCountLabel.setText(String.valueOf(count)));
+    }
+
+    /**
+     * Update label total link rusak secara real-time
+     */
+    private void updateBrokenLinkCount(int count) {
+        Platform.runLater(() -> brokenCountLabel.setText(String.valueOf(count)));
+    }
+
+    /**
+     * Buat dan atur ulang tombol pagination
+     */
     private void updatePagination() {
-        customPagination.getChildren().clear();
+        customPagination.getChildren().clear(); // Bersihkan tombol sebelumnya
+
+        totalPageCount = (int) Math.ceil((double) allResults.size() / ROWS_PER_PAGE);
+        if (totalPageCount == 0) totalPageCount = 1;
 
         HBox buttonBox = new HBox(5);
         buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
 
-        // Tombol Prev (⯇)
-        Button prevButton = new Button("⯇");
-        stylePageButton(prevButton);
-        prevButton.setDisable(currentPage == 1);
-        prevButton.setOnAction(e -> {
-            if (currentPage > 1) {
-                currentPage--;
-                updateCurrentPage(currentPage - 1);
-                updatePagination();
-            }
-        });
+        Button prev = createPageButton("⯇", () -> goToPage(currentPage - 1), currentPage == 1);
+        Button next = createPageButton("⯈", () -> goToPage(currentPage + 1), currentPage == totalPageCount);
 
-        // Tombol Next (⯈)
-        Button nextButton = new Button("⯈");
-        stylePageButton(nextButton);
-        nextButton.setDisable(currentPage == totalPageCount || totalPageCount == 0);
-        nextButton.setOnAction(e -> {
-            if (currentPage < totalPageCount) {
-                currentPage++;
-                updateCurrentPage(currentPage - 1);
-                updatePagination();
-            }
-        });
+        buttonBox.getChildren().add(prev);
 
-        buttonBox.getChildren().add(prevButton);
+        int start = Math.max(1, currentPage - MAX_PAGE_BUTTONS / 2);
+        int end = Math.min(totalPageCount, start + MAX_PAGE_BUTTONS - 1);
 
-        // Hitung range halaman yang akan ditampilkan
-        int startPage, endPage;
-        if (totalPageCount <= MAX_PAGE_BUTTONS) {
-            startPage = 1;
-            endPage = totalPageCount;
-        } else {
-            int half = MAX_PAGE_BUTTONS / 2;
-            if (currentPage <= half + 1) {
-                startPage = 1;
-                endPage = MAX_PAGE_BUTTONS;
-            } else if (currentPage >= totalPageCount - half) {
-                startPage = totalPageCount - MAX_PAGE_BUTTONS + 1;
-                endPage = totalPageCount;
-            } else {
-                startPage = currentPage - half;
-                endPage = currentPage + half;
-            }
-        }
-
-        for (int i = startPage; i <= endPage; i++) {
-            Button btn = new Button(String.valueOf(i));
-            stylePageButton(btn);
+        for (int i = start; i <= end; i++) {
+            int page = i;
+            Button btn = createPageButton(String.valueOf(i), () -> goToPage(page), false);
             if (i == currentPage) btn.getStyleClass().add("current-page");
-            final int pageIndex = i;
-            btn.setOnAction(e -> {
-                currentPage = pageIndex;
-                updateCurrentPage(pageIndex - 1);
-                updatePagination();
-            });
             buttonBox.getChildren().add(btn);
         }
 
-        buttonBox.getChildren().add(nextButton);
+        buttonBox.getChildren().add(next);
+        customPagination.getChildren().addAll(buttonBox, new Label("Halaman " + currentPage + " / " + totalPageCount));
 
-        // Label halaman di bawah tombol
-        Label pageInfo = new Label("Halaman " + currentPage + " / " + (totalPageCount == 0 ? 1 : totalPageCount));
-        pageInfo.setStyle("-fx-font-size: 11; -fx-text-fill: #555;");
-        VBox.setMargin(pageInfo, new javafx.geometry.Insets(4, 0, 0, 0));
-        pageInfo.setMaxWidth(Double.MAX_VALUE);
-        pageInfo.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
-
-        customPagination.getChildren().addAll(buttonBox, pageInfo);
+        updateCurrentPage(currentPage - 1); // index dari 0
     }
 
+    /**
+     * Buat tombol halaman dengan aksi tertentu
+     */
+    private Button createPageButton(String text, Runnable action, boolean disabled) {
+        Button btn = new Button(text);
+        btn.setMinWidth(PAGE_BUTTON_WIDTH);
+        btn.setDisable(disabled);
+        btn.setOnAction(e -> action.run());
+        return btn;
+    }
+
+    /**
+     * Arahkan ke halaman tertentu
+     */
+    private void goToPage(int pageNumber) {
+        if (pageNumber < 1 || pageNumber > totalPageCount) return;
+        currentPage = pageNumber;
+        updatePagination();
+    }
+
+    /**
+     * Tampilkan subset hasil sesuai halaman yang aktif
+     */
     private void updateCurrentPage(int pageIndex) {
         int fromIndex = pageIndex * ROWS_PER_PAGE;
         int toIndex = Math.min(fromIndex + ROWS_PER_PAGE, allResults.size());
         currentPageResults.setAll(allResults.subList(fromIndex, toIndex));
     }
 
-    private void stylePageButton(Button btn) {
-        btn.getStyleClass().add("page-button");
-        btn.setMinWidth(PAGE_BUTTON_WIDTH);
-        btn.setPrefWidth(PAGE_BUTTON_WIDTH);
-        btn.setMaxWidth(PAGE_BUTTON_WIDTH);
+    /**
+     * Tampilkan alert popup informasi
+     */
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

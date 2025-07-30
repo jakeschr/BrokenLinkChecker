@@ -12,7 +12,7 @@ public class Application extends javafx.application.Application {
         Scene scene = new Scene(fxmlLoader.load());
 
         // Buat stage tanpa title bar bawaan OS
-//        stage.initStyle(StageStyle.UNDECORATED);
+        // stage.initStyle(StageStyle.UNDECORATED);
 
         stage.setTitle("BrokenLink Checker");
         stage.setScene(scene);
@@ -22,6 +22,9 @@ public class Application extends javafx.application.Application {
         stage.setMaximized(true);  // Atau bisa dihapus kalau tidak ingin fullscreen
 
         stage.show();
+
+
+    // https://informatika.unpar.ac.id
     }
 
     public static void main(String[] args) {

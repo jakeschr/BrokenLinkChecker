@@ -18,8 +18,8 @@
       <HBox spacing="10">
 
         <!--  Input link  -->
-        <Label text="Initial Link:"/>
-        <TextField fx:id="urlField" HBox.hgrow="ALWAYS"/>
+        <Label text="Seed URL:"/>
+        <TextField fx:id="seedUrl" HBox.hgrow="ALWAYS"/>
 
         <!--  Dropdown teknologi (librari)  -->
         <Label text="Technology:"/>
