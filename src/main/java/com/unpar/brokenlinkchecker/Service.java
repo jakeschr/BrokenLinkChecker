@@ -7,6 +7,10 @@ import com.unpar.brokenlinkchecker.util.HttpStatus;
 import java.util.*;
 import java.util.function.Consumer;
 
+import java.io.IOException;
+import org.jsoup.HttpStatusException;
+
+
 /**
  * Kelas Service bertanggung jawab untuk menjalankan proses web crawling
  * menggunakan algoritma Breadth-First Search (BFS) dan teknologi Jsoup.
@@ -119,8 +123,10 @@ public class Service {
             String currentUrl = frontier.poll(); // Mengambil halaman berikutnya
 
             try {
-                // Mengambil isi halaman dengan Jsoup
-                org.jsoup.nodes.Document doc = org.jsoup.Jsoup.connect(currentUrl).get();
+                org.jsoup.nodes.Document doc = org.jsoup.Jsoup.connect(currentUrl)
+                        .timeout(10_000) // timeout 10 detik
+                        .get();
+
                 org.jsoup.select.Elements links = doc.select("a[href]"); // Ambil semua elemen <a href=...>
 
                 for (org.jsoup.nodes.Element link : links) {
@@ -129,10 +135,10 @@ public class Service {
                     // Lewati tautan yang kosong atau non-HTTP seperti mailto:
                     if (href.isEmpty() || href.startsWith("mailto:")) continue;
 
-                    String anchorText = link.text(); // Teks yang terlihat dari link
-                    boolean isSameHost = isSameDomain(seedUrl, href); // Cek apakah berasal dari host yang sama
+                    String anchorText = link.text(); // Teks anchor
+                    boolean isSameHost = isSameDomain(seedUrl, href);
 
-                    // Jika halaman dari host yang sama dan belum dikunjungi, masukkan ke frontier BFS
+                    // Jika halaman dari host yang sama dan belum dikunjungi, tambahkan ke frontier
                     if (isSameHost && !visitedPages.contains(href)) {
                         visitedPages.add(href);
                         frontier.add(href);
@@ -142,13 +148,12 @@ public class Service {
                     // Periksa status tautan
                     String status = checkStatus(href);
 
-                    // Simpan hasil pemeriksaan
                     LinkResult result = new LinkResult(href, status, currentUrl, anchorText);
                     allLinks.add(result);
                     updateTotalLinkCount(allLinks.size());
 
                     // Jika status rusak (kode 4xx/5xx atau gagal koneksi), kirim ke UI
-                    if (status.startsWith("4") || status.startsWith("5") || status.equals("FAILED")) {
+                    if (status.startsWith("4") || status.startsWith("5") || status.startsWith("FAILED")) {
                         brokenLinks.add(result);
                         updateBrokenLinkCount(brokenLinks.size());
 
@@ -158,13 +163,30 @@ public class Service {
                     }
                 }
 
-            } catch (Exception e) {
-                // Jika halaman gagal diambil, anggap sebagai tautan rusak
-                LinkResult result = new LinkResult(currentUrl, "FAILED", currentUrl, "");
-                allLinks.add(result);
-                updateTotalLinkCount(allLinks.size());
+            } catch (org.jsoup.HttpStatusException e) {
+                // Error HTTP (misal 404, 500)
+                int statusCode = e.getStatusCode();
+                String reason = HttpStatus.getReasonPhrase(statusCode);
+                String status = statusCode + " " + reason;
 
+                LinkResult result = new LinkResult(currentUrl, status, currentUrl, "");
+                allLinks.add(result);
                 brokenLinks.add(result);
+                updateTotalLinkCount(allLinks.size());
+                updateBrokenLinkCount(brokenLinks.size());
+
+                if (onLinkResult != null) {
+                    onLinkResult.accept(result);
+                }
+
+            } catch (IOException e) {
+                // Error koneksi lainnya (timeout, DNS error, SSL, dsb)
+                String status = "FAILED (" + e.getClass().getSimpleName() + ")";
+
+                LinkResult result = new LinkResult(currentUrl, status, currentUrl, "");
+                allLinks.add(result);
+                brokenLinks.add(result);
+                updateTotalLinkCount(allLinks.size());
                 updateBrokenLinkCount(brokenLinks.size());
 
                 if (onLinkResult != null) {
@@ -173,7 +195,7 @@ public class Service {
             }
         }
 
-        // Kirim hasil akhir jika crawling selesai tanpa dihentikan paksa
+        // Kirim ringkasan hasil jika tidak dihentikan
         if (onComplete != null && !stopRequested) {
             CrawlResult summary = new CrawlResult(
                     allLinks,
@@ -184,6 +206,7 @@ public class Service {
             onComplete.accept(summary);
         }
     }
+
 
     // ===================== HELPER UNTUK UPDATE UI ======================
 
