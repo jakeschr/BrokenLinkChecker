@@ -4,6 +4,12 @@
     -fx-font-size: 13px;
 }
 
+#seedUrlField {
+    -fx-pref-width: 400px;
+    -fx-max-width: 550px;
+}
+
+
 .label {
     -fx-font-size: 14px;
     -fx-padding: 2 5 2 5;

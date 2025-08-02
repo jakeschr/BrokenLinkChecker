@@ -21,23 +21,47 @@ import java.util.function.Consumer;
  */
 public class Controller {
 
+
     // ===================== Komponen FXML (terhubung ke main.fxml) =====================
-    @FXML private TextField seedUrl;                        // Input URL awal
-    @FXML private ComboBox<String> techChoiceBox;           // Dropdown pilihan teknologi (Jsoup/Playwright)
-    @FXML private Button checkButton;                       // Tombol untuk mulai pengecekan
-    @FXML private Button stopButton;                        // Tombol untuk menghentikan pengecekan
-    @FXML private Button exportButton;                      // Tombol untuk ekspor hasil (belum diimplementasikan)
-    @FXML private Label statusLabel;                        // Label status (IDLE, CHECKING, dsb)
-    @FXML private Label pageCountLabel;                     // Label total halaman yang dikunjungi
-    @FXML private Label linkCountLabel;                     // Label total semua link yang ditemukan
-    @FXML private Label brokenCountLabel;                   // Label total link rusak
-    @FXML private VBox customPagination;                    // Komponen pagination khusus (bukan Pagination bawaan JavaFX)
-    @FXML private TableView<LinkResult> resultTable;        // Tabel hasil link rusak
-    @FXML private TableColumn<LinkResult, Number> colNumber;       // Kolom nomor
-    @FXML private TableColumn<LinkResult, String> colBrokenLink;   // Kolom link rusak
-    @FXML private TableColumn<LinkResult, String> colStatus;       // Kolom status HTTP
-    @FXML private TableColumn<LinkResult, String> colSourcePage;   // Kolom halaman sumber
-    @FXML private TableColumn<LinkResult, String> colAnchorText;   // Kolom teks anchor
+    @FXML
+    private TextField seedUrl;                        // Input URL awal
+    @FXML
+    private ComboBox<String> techChoiceBox;           // Dropdown pilihan teknologi (Jsoup/Playwright)
+    @FXML
+    private ComboBox<String> algoChoiceBox;           // Dropdown pilihan algoritma (BFS/DFS)
+    @FXML
+    private Button checkButton;                       // Tombol untuk mulai pengecekan
+    @FXML
+    private Button stopButton;                        // Tombol untuk menghentikan pengecekan
+    @FXML
+    private Button exportButton;                      // Tombol untuk ekspor hasil (belum diimplementasikan)
+    @FXML
+    private Label statusLabel;                        // Label status (IDLE, CHECKING, dsb)
+    @FXML
+    private Label pageCountLabel;                     // Label total halaman yang dikunjungi
+    @FXML
+    private Label linkCountLabel;                     // Label total semua link yang ditemukan
+    @FXML
+    private Label brokenCountLabel;                   // Label total link rusak
+    @FXML
+    private VBox customPagination;                    // Komponen pagination khusus (bukan Pagination bawaan JavaFX)
+    @FXML
+    private TableView<LinkResult> resultTable;        // Tabel hasil link rusak
+    @FXML
+    private TableColumn<LinkResult, Number> colNumber;       // Kolom nomor
+    @FXML
+    private TableColumn<LinkResult, String> colBrokenLink;   // Kolom link rusak
+    @FXML
+    private TableColumn<LinkResult, String> colStatus;       // Kolom status HTTP
+    @FXML
+    private TableColumn<LinkResult, String> colSourcePage;   // Kolom halaman sumber
+    @FXML
+    private TableColumn<LinkResult, String> colAnchorText;   // Kolom teks anchor
+
+    @FXML
+    private ToggleButton brokenLinkToggle;
+    @FXML
+    private ToggleButton webPageToggle;
 
     // ===================== Variabel Internal =====================
     private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();       // Semua hasil link rusak
