@@ -26,8 +26,6 @@ public class Controller {
     @FXML
     private TextField seedUrl;                        // Input URL awal
     @FXML
-    private ComboBox<String> techChoiceBox;           // Dropdown pilihan teknologi (Jsoup/Playwright)
-    @FXML
     private ComboBox<String> algoChoiceBox;           // Dropdown pilihan algoritma (BFS/DFS)
     @FXML
     private Button checkButton;                       // Tombol untuk mulai pengecekan
@@ -46,7 +44,10 @@ public class Controller {
     @FXML
     private VBox customPagination;                    // Komponen pagination khusus (bukan Pagination bawaan JavaFX)
     @FXML
-    private TableView<LinkResult> resultTable;        // Tabel hasil link rusak
+    private TableView<LinkResult> brokenLinkTable;
+    @FXML
+    private TableView<CrawledPage> crawledPageTable;
+
     @FXML
     private TableColumn<LinkResult, Number> colNumber;       // Kolom nomor
     @FXML
@@ -83,7 +84,7 @@ public class Controller {
     @FXML
     public void initialize() {
         setupTableColumns();      // Atur lebar kolom dan binding isi tabel
-        setupTechChoiceBox();     // Atur pilihan dropdown teknologi
+        setupAlgoChoiceBox();  // inisialisasi pilihan algoritma
         resultTable.setItems(currentPageResults);  // Sambungkan data ke tabel
         setStatus(ExecutionStatus.IDLE);           // Set status awal
     }
@@ -113,12 +114,16 @@ public class Controller {
     }
 
     /**
-     * Inisialisasi pilihan teknologi crawling
+     * Inisialisasi pilihan algoritma crawling
      */
-    private void setupTechChoiceBox() {
-        techChoiceBox.setItems(FXCollections.observableArrayList("Jsoup", "Playwright"));
-        techChoiceBox.getSelectionModel().selectFirst(); // Pilih default: Jsoup
+    private void setupAlgoChoiceBox() {
+        algoChoiceBox.setItems(FXCollections.observableArrayList(
+                "Breadth-First Search (BFS)",
+                "Depth-First Search (DFS)"
+        ));
+        algoChoiceBox.getSelectionModel().selectFirst(); // default ke BFS
     }
+
 
     /**
      * Event handler saat tombol "Check" diklik
@@ -126,7 +131,8 @@ public class Controller {
     @FXML
     public void onCheckClick() {
         String url = seedUrl.getText();        // Ambil input URL dari TextField
-        String tech = techChoiceBox.getValue(); // Ambil pilihan teknologi
+        String algoLabel = algoChoiceBox.getValue(); // Ambil pilihan algoritma
+        String algorithm = algoLabel.contains("BFS") ? "BFS" : "DFS";
 
         if (url == null || url.isBlank()) {
             showAlert("Input Error", "Seed URL tidak boleh kosong.");
@@ -149,7 +155,7 @@ public class Controller {
         service.setOnTotalLinkUpdate(this::updateTotalLinkCount);  // Update label jumlah tautan total
         service.setOnBrokenLinkUpdate(this::updateBrokenLinkCount);// Update label jumlah tautan rusak
 
-        service.startCrawling(url, tech);      // Mulai crawling
+        service.startCrawling(url, algorithm); // Kirim URL + algoritma (BFS/DFS)
     }
 
     /**
