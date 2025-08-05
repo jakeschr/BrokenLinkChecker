@@ -1,6 +1,7 @@
 package com.unpar.brokenlinkchecker;
 
 import com.unpar.brokenlinkchecker.model.CrawlResult;
+import com.unpar.brokenlinkchecker.model.CrawledPage;
 import com.unpar.brokenlinkchecker.model.ExecutionStatus;
 import com.unpar.brokenlinkchecker.model.LinkResult;
 import javafx.application.Platform;
@@ -12,7 +13,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
+import java.time.format.DateTimeFormatter;
+
 
 /**
  * Controller utama untuk menangani interaksi UI aplikasi BrokenLinkChecker.
@@ -45,8 +49,6 @@ public class Controller {
     private VBox customPagination;                    // Komponen pagination khusus (bukan Pagination bawaan JavaFX)
     @FXML
     private TableView<LinkResult> brokenLinkTable;
-    @FXML
-    private TableView<CrawledPage> crawledPageTable;
 
     @FXML
     private TableColumn<LinkResult, Number> colNumber;       // Kolom nomor
@@ -58,6 +60,23 @@ public class Controller {
     private TableColumn<LinkResult, String> colSourcePage;   // Kolom halaman sumber
     @FXML
     private TableColumn<LinkResult, String> colAnchorText;   // Kolom teks anchor
+
+    @FXML
+    private TableView<CrawledPage> crawledPageTable;
+    @FXML
+    private TableColumn<CrawledPage, Number> colPageNumber;
+    @FXML
+    private TableColumn<CrawledPage, String> colPageUrl;
+    @FXML
+    private TableColumn<CrawledPage, String> colPageStatus;
+    @FXML
+    private TableColumn<CrawledPage, Number> colLinkCount;
+    @FXML
+    private TableColumn<CrawledPage, String> colAccessTime;
+
+    @FXML
+    private ObservableList<CrawledPage> crawledPageList = FXCollections.observableArrayList();
+
 
     @FXML
     private ToggleButton brokenLinkToggle;
@@ -74,35 +93,36 @@ public class Controller {
 
     private int currentPage = 1;                              // Halaman saat ini dalam pagination
     private int totalPageCount = 0;                           // Total halaman dalam pagination
-    private static final int ROWS_PER_PAGE = 25;              // Jumlah baris per halaman
+    private static final int ROWS_PER_PAGE = 1;              // Jumlah baris per halaman
     private static final int MAX_PAGE_BUTTONS = 5;            // Tombol navigasi maksimal yang ditampilkan
     private static final double PAGE_BUTTON_WIDTH = 40;       // Lebar tombol halaman
+
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     /**
      * Dipanggil otomatis setelah FXML dimuat. Inisialisasi awal komponen tabel dan dropdown.
      */
     @FXML
     public void initialize() {
-        setupTableColumns();      // Atur lebar kolom dan binding isi tabel
-        setupAlgoChoiceBox();  // inisialisasi pilihan algoritma
-        resultTable.setItems(currentPageResults);  // Sambungkan data ke tabel
-        setStatus(ExecutionStatus.IDLE);           // Set status awal
+        setupTableColumns();           // Atur lebar kolom dan binding isi tabel
+        setupAlgoChoiceBox();         // Inisialisasi pilihan algoritma
+        brokenLinkTable.setItems(currentPageResults);  // Sambungkan data ke tabel rusak
+        setStatus(ExecutionStatus.IDLE);               // Set status awal
+        setupToggleView();            // Toggle antara dua tabel
     }
 
+
     /**
-     * Menentukan lebar dan isi kolom tabel hasil
+     * Menentukan lebar dan isi kolom tabel
      */
     private void setupTableColumns() {
-        double totalRatio = 100.0;
+        // BrokenLinkTable
+        colNumber.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.03));
+        colStatus.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.15));
+        colBrokenLink.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.40));
+        colAnchorText.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.17));
+        colSourcePage.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.25));
 
-        // Bind ukuran kolom agar proporsional dengan total lebar tabel
-        colNumber.prefWidthProperty().bind(resultTable.widthProperty().multiply(3 / totalRatio));
-        colStatus.prefWidthProperty().bind(resultTable.widthProperty().multiply(15 / totalRatio));
-        colBrokenLink.prefWidthProperty().bind(resultTable.widthProperty().multiply(40 / totalRatio));
-        colAnchorText.prefWidthProperty().bind(resultTable.widthProperty().multiply(17 / totalRatio));
-        colSourcePage.prefWidthProperty().bind(resultTable.widthProperty().multiply(25 / totalRatio));
-
-        // Mengatur isi tiap kolom
         colNumber.setCellValueFactory(cell -> Bindings.createIntegerBinding(() -> {
             int index = currentPageResults.indexOf(cell.getValue());
             return (currentPage - 1) * ROWS_PER_PAGE + index + 1;
@@ -111,7 +131,32 @@ public class Controller {
         colStatus.setCellValueFactory(cell -> cell.getValue().statusProperty());
         colSourcePage.setCellValueFactory(cell -> cell.getValue().sourcePageProperty());
         colAnchorText.setCellValueFactory(cell -> cell.getValue().anchorTextProperty());
+
+        // CrawledPageTable
+        colPageNumber.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.03));
+        colPageStatus.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.15));
+        colPageUrl.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.40));
+        colLinkCount.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.17));
+        colAccessTime.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.25));
+
+        colPageNumber.setCellValueFactory(cell -> Bindings.createIntegerBinding(() ->
+                crawledPageList.indexOf(cell.getValue()) + 1));
+        colPageUrl.setCellValueFactory(cell -> cell.getValue().urlProperty());
+        colPageStatus.setCellValueFactory(cell -> cell.getValue().statusProperty());
+        colLinkCount.setCellValueFactory(cell -> cell.getValue().linkCountProperty());
+
+
+        colAccessTime.setCellValueFactory(cell -> Bindings.createStringBinding(
+                () -> {
+                    LocalDateTime time = cell.getValue().getAccessedTime();
+                    return time != null ? TIME_FORMATTER.format(time) : "";
+                },
+                cell.getValue().accessTimeProperty()
+        ));
+
+
     }
+
 
     /**
      * Inisialisasi pilihan algoritma crawling
@@ -122,6 +167,40 @@ public class Controller {
                 "Depth-First Search (DFS)"
         ));
         algoChoiceBox.getSelectionModel().selectFirst(); // default ke BFS
+    }
+
+    /**
+     * Inisialisasi ToggleButton agar hanya satu yang aktif dan ganti tabel sesuai toggle.
+     */
+    private void setupToggleView() {
+        ToggleGroup toggleGroup = new ToggleGroup();
+        brokenLinkToggle.setToggleGroup(toggleGroup);
+        webPageToggle.setToggleGroup(toggleGroup);
+
+        toggleGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            if (newToggle == brokenLinkToggle) {
+                showBrokenLinkTable();
+            } else if (newToggle == webPageToggle) {
+                showCrawledPageTable();
+            }
+        });
+
+        // Set tampilan awal
+        brokenLinkToggle.setSelected(true);
+        showBrokenLinkTable();
+    }
+
+
+    private void showBrokenLinkTable() {
+        brokenLinkTable.setVisible(true);
+        crawledPageTable.setVisible(false);
+        updatePagination(); // update pagination untuk link rusak
+    }
+
+    private void showCrawledPageTable() {
+        brokenLinkTable.setVisible(false);
+        crawledPageTable.setVisible(true);
+        // Tidak perlu pagination jika halaman tidak banyak (opsional)
     }
 
 

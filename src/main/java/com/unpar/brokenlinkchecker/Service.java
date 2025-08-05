@@ -8,13 +8,14 @@ import java.util.*;
 import java.util.function.Consumer;
 
 import java.io.IOException;
+
 import org.jsoup.HttpStatusException;
 
 
 /**
  * Kelas Service bertanggung jawab untuk menjalankan proses web crawling
  * menggunakan algoritma Breadth-First Search (BFS) dan teknologi Jsoup.
- *
+ * <p>
  * Fitur utama:
  * - Melakukan crawling terhadap situs web untuk menemukan tautan.
  * - Memeriksa status setiap tautan (kode HTTP).
@@ -46,20 +47,20 @@ public class Service {
     private volatile boolean stopRequested = false;
 
     /**
-     * Memulai proses crawling berdasarkan URL awal dan nama teknologi (saat ini hanya mendukung Jsoup).
+     * Memulai proses crawling berdasarkan URL awal dan nama algoritma yang digunakan
      * Proses dilakukan di thread terpisah agar tidak memblok UI.
      *
      * @param seedUrl   URL awal (root)
-     * @param technology Teknologi yang digunakan (sementara hanya "Jsoup")
+     * @param algorithm Algoritma yang digunakan (BFS/DFS)
      */
-    public void startCrawling(String seedUrl, String technology) {
+    public void startCrawling(String seedUrl, String algorithm) {
         Thread thread = new Thread(() -> {
             try {
-                if ("Jsoup".equalsIgnoreCase(technology)) {
+                if ("BFS".equalsIgnoreCase(algorithm)) {
                     crawlWithJsoup(seedUrl);
                 } else {
                     if (onError != null)
-                        onError.accept("Teknologi belum didukung: " + technology);
+                        onError.accept("Algoritma belum didukung: " + algorithm);
                 }
             } catch (Exception e) {
                 if (onError != null)
