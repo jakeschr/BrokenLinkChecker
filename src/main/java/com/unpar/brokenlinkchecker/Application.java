@@ -17,6 +17,7 @@ public class Application extends javafx.application.Application {
         stage.setTitle("BrokenLink Checker");
         stage.setScene(scene);
 
+
         stage.setMinWidth(900);
         stage.setMinHeight(600);
         stage.setMaximized(true);  // Atau bisa dihapus kalau tidak ingin fullscreen
@@ -24,7 +25,7 @@ public class Application extends javafx.application.Application {
         stage.show();
 
 
-    // https://informatika.unpar.ac.id
+        // https://informatika.unpar.ac.id
     }
 
     public static void main(String[] args) {

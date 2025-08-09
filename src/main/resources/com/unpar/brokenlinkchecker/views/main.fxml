@@ -95,7 +95,7 @@
                 <!-- Dropdown Algoritma -->
                 <HBox spacing="5" alignment="CENTER_RIGHT">
                     <Label text="Algorithm:"/>
-                    <ComboBox fx:id="algoChoiceBox" prefWidth="200"/>
+                    <ComboBox fx:id="algoChoiceBox" prefWidth="230"/>
                 </HBox>
 
                 <!-- Tombol Aksi -->

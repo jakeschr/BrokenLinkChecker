@@ -18,7 +18,6 @@
     -color-danger:    #EF4444; /* merah */
 
     /* Elevation & radius */
-    -radius-sm: 6;
     -radius-md: 10;
 
     -fx-background-color: -color-bg;
@@ -141,16 +140,29 @@
 }
 .table-view .column-header, .table-view .filler {
     -fx-background-color: transparent;
+
+        -fx-border-color: transparent -color-border transparent transparent;
+        -fx-border-width: 0 1 0 0;
 }
 .table-view .column-header .label {
     -fx-font-weight: 600;
     -fx-text-fill: -color-muted;
     -fx-padding: 8 10;
+
+        -fx-border-color: transparent -color-border transparent transparent;
+        -fx-border-width: 0 1 0 0;
 }
 .table-view .table-cell {
     -fx-padding: 8 10;
     -fx-border-color: transparent;
     -fx-text-fill: -color-text;
+
+        -fx-padding: 8 10;
+        -fx-text-fill: -color-text;
+
+        /* tambahkan garis vertikal tipis di kanan setiap sel */
+        -fx-border-color: transparent -color-border transparent transparent;
+        -fx-border-width: 0 1 0 0;
 }
 
 /* Penekanan kolom angka tetap center */
