@@ -14,23 +14,17 @@
             <HBox spacing="20" alignment="CENTER_LEFT">
 
                 <padding>
-                    <Insets top="10" right="10" bottom="5" left="10"/>
+                    <Insets top="10" right="10" bottom="0" left="10"/>
                 </padding>
 
                 <!-- Input URL -->
-                <HBox spacing="5" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
-                    <Label text="Seed URL:"/>
-                    <TextField fx:id="seedUrl" prefWidth="300" HBox.hgrow="ALWAYS"/>
-                </HBox>
+                <TextField fx:id="seedUrl" promptText="Seed URL" prefWidth="300" HBox.hgrow="ALWAYS"/>
 
                 <!-- Spacer -->
                 <Region HBox.hgrow="ALWAYS"/>
 
                 <!-- Dropdown Algoritma -->
-                <HBox spacing="5" alignment="CENTER_RIGHT">
-                    <Label text="Algorithm:"/>
-                    <ComboBox fx:id="algoChoiceBox" prefWidth="230"/>
-                </HBox>
+                <ComboBox fx:id="algoChoiceBox" prefWidth="220" promptText="Algorithm"/>
 
                 <!-- Tombol Aksi -->
                 <HBox spacing="10" alignment="CENTER_RIGHT">
@@ -44,7 +38,7 @@
             <HBox spacing="20" alignment="CENTER_LEFT">
 
                 <padding>
-                    <Insets top="5" right="10" bottom="10" left="10"/>
+                    <Insets top="0" right="10" bottom="10" left="10"/>
                 </padding>
 
                 <!-- Ringkasan Hasil -->

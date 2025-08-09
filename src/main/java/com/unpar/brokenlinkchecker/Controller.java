@@ -166,7 +166,6 @@ public class Controller {
                 "Breadth-First Search (BFS)",
                 "Depth-First Search (DFS)"
         ));
-        algoChoiceBox.getSelectionModel().selectFirst(); // default ke BFS
     }
 
     /**
@@ -210,7 +209,17 @@ public class Controller {
     @FXML
     public void onCheckClick() {
         String url = seedUrl.getText();        // Ambil input URL dari TextField
-        String algoLabel = algoChoiceBox.getValue(); // Ambil pilihan algoritma
+        String algoLabel = algoChoiceBox.getValue(); // bisa null jika belum dipilih
+
+        if (url == null || url.isBlank()) {
+            showAlert("Input Error", "Seed URL tidak boleh kosong.");
+            return;
+        }
+        if (algoLabel == null) {
+            showAlert("Input Error", "Pilih Algorithm terlebih dahulu.");
+            return;
+        }
+
         String algorithm = algoLabel.contains("BFS") ? "BFS" : "DFS";
 
         if (url == null || url.isBlank()) {
