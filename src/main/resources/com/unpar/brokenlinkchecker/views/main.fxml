@@ -8,72 +8,6 @@
             fx:controller="com.unpar.brokenlinkchecker.Controller"
             stylesheets="@../styles/main.css">
 
-    <!--    <top>-->
-    <!--        <VBox>-->
-    <!--            &lt;!&ndash;    Baris 1    &ndash;&gt;-->
-    <!--            <HBox>-->
-
-    <!--                &lt;!&ndash; Input URL &ndash;&gt;-->
-    <!--                <HBox spacing="5" alignment="CENTER_LEFT">-->
-    <!--                    <Label text="Seed URL:"/>-->
-    <!--                    <TextField fx:id="seedUrl" HBox.hgrow="ALWAYS"/>-->
-    <!--                </HBox>-->
-
-    <!--                &lt;!&ndash; Dropdown Algoritma &ndash;&gt;-->
-    <!--                <HBox spacing="5" alignment="CENTER">-->
-    <!--                    <Label text="Algorithm:"/>-->
-    <!--                    <ComboBox fx:id="algoChoiceBox"/>-->
-    <!--                </HBox>-->
-
-    <!--                &lt;!&ndash; Tombol Aksi &ndash;&gt;-->
-    <!--                <HBox spacing="20" alignment="CENTER_RIGHT">-->
-    <!--                    <Button fx:id="checkButton" text="Check" onAction="#onCheckClick"/>-->
-    <!--                    <Button fx:id="stopButton" text="Stop" onAction="#onStopClick"/>-->
-    <!--                    <Button fx:id="exportButton" text="Export" onAction="#onExportClick"/>-->
-    <!--                </HBox>-->
-
-    <!--            </HBox>-->
-
-    <!--            &lt;!&ndash;    Baris 2    &ndash;&gt;-->
-    <!--            <HBox>-->
-    <!--                &lt;!&ndash; Ringkasan Hasil &ndash;&gt;-->
-    <!--                <GridPane gridLinesVisible="true">-->
-    <!--                    <columnConstraints>-->
-    <!--                        <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="100"/>-->
-    <!--                        <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="100"/>-->
-    <!--                        <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="100"/>-->
-    <!--                        <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="100"/>-->
-    <!--                    </columnConstraints>-->
-    <!--                    <rowConstraints>-->
-    <!--                        <RowConstraints valignment="CENTER"/>-->
-    <!--                        <RowConstraints valignment="CENTER"/>-->
-    <!--                    </rowConstraints>-->
-
-    <!--                    &lt;!&ndash; Header &ndash;&gt;-->
-    <!--                    <Label text="Status" GridPane.rowIndex="0" GridPane.columnIndex="0"/>-->
-    <!--                    <Label text="Total Halaman" GridPane.rowIndex="0" GridPane.columnIndex="1"/>-->
-    <!--                    <Label text="Total Tautan" GridPane.rowIndex="0" GridPane.columnIndex="2"/>-->
-    <!--                    <Label text="Tautan Rusak" GridPane.rowIndex="0" GridPane.columnIndex="3"/>-->
-
-    <!--                    &lt;!&ndash; Nilai &ndash;&gt;-->
-    <!--                    <Label fx:id="statusLabel" text="Belum mulai" GridPane.rowIndex="1" GridPane.columnIndex="0"/>-->
-    <!--                    <Label fx:id="pageCountLabel" text="0" GridPane.rowIndex="1" GridPane.columnIndex="1"/>-->
-    <!--                    <Label fx:id="linkCountLabel" text="0" GridPane.rowIndex="1" GridPane.columnIndex="2"/>-->
-    <!--                    <Label fx:id="brokenCountLabel" text="0" GridPane.rowIndex="1" GridPane.columnIndex="3"/>-->
-    <!--                </GridPane>-->
-
-    <!--                &lt;!&ndash; Tombol Toggle antara Tabel BrokenLink dan WebPage &ndash;&gt;-->
-    <!--                <HBox spacing="5" alignment="CENTER">-->
-    <!--                    <ToggleButton fx:id="brokenLinkToggle" text="Broken Links" selected="true"/>-->
-    <!--                    <ToggleButton fx:id="webPageToggle" text="Crawled Pages"/>-->
-    <!--                </HBox>-->
-
-    <!--                &lt;!&ndash; Pagination &ndash;&gt;-->
-    <!--                <VBox fx:id="customPagination" spacing="2" alignment="CENTER_RIGHT"/>-->
-    <!--            </HBox>-->
-    <!--        </VBox>-->
-    <!--    </top>-->
-
     <top>
         <VBox spacing="10">
             <!-- Baris 1: URL input + Algoritma + Tombol -->
@@ -114,7 +48,7 @@
                 </padding>
 
                 <!-- Ringkasan Hasil -->
-                <GridPane gridLinesVisible="true">
+                <GridPane styleClass="summary-card">
 
                     <columnConstraints>
                         <ColumnConstraints halignment="CENTER" hgrow="ALWAYS" minWidth="100"/>

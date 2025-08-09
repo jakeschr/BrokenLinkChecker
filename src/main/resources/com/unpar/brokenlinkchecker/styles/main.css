@@ -1,240 +1,270 @@
 /* ====== Tokens / Variables (looked-up colors) ====== */
 .root {
-    -fx-font-family: "Segoe UI", "Inter", "Roboto", sans-serif;
-    -fx-font-size: 13px;
+	-fx-font-family: "Segoe UI", "Inter", "Roboto", sans-serif;
+	-fx-font-size: 13px;
 
-    /* Warna dasar */
-    -color-bg:        #F6F7FB;
-    -color-surface:   #FFFFFF;
-    -color-border:    #E6E8EF;
-    -color-muted:     #6B7280;
-    -color-text:      #1F2330;
-    -color-header:    #F2F4F8;
+	/* Warna dasar */
+	-color-bg: #f6f7fb;
+	-color-surface: #ffffff;
+	-color-border: #e6e8ef;
+	-color-muted: #6b7280;
+	-color-text: #1f2330;
+	-color-header: #f2f4f8;
 
-    /* Aksen */
-    -color-primary:   #3B82F6; /* biru */
-    -color-success:   #10B981; /* hijau */
-    -color-warning:   #F59E0B; /* oranye */
-    -color-danger:    #EF4444; /* merah */
+	/* Aksen */
+	-color-primary: #3b82f6; /* biru */
+	-color-success: #10b981; /* hijau */
+	-color-warning: #f59e0b; /* oranye */
+	-color-danger: #ef4444; /* merah */
 
-    /* Elevation & radius */
-    -radius-md: 10;
+	/* Elevation & radius */
+	-radius-md: 10;
 
-    -fx-background-color: -color-bg;
-    -fx-text-fill: -color-text;
+	-fx-background-color: -color-bg;
+	-fx-text-fill: -color-text;
 }
 
 /* ====== Form Controls ====== */
-.text-field, .combo-box-base {
-    -fx-background-color: -color-surface;
-    -fx-background-radius: var(-radius-md);
-    -fx-border-color: -color-border;
-    -fx-border-radius: var(-radius-md);
-    -fx-padding: 8 10;
+.text-field,
+.combo-box-base {
+	-fx-background-color: -color-surface;
+	-fx-background-radius: 6;
+	-fx-border-color: -color-border;
+	-fx-border-radius: 6;
+	-fx-padding: 8 10;
 }
-.text-field:focused, .combo-box-base:focused {
-    -fx-border-color: -color-primary;
-    -fx-effect: dropshadow(gaussian, rgba(59,130,246,0.15), 8, 0.2, 0, 0);
+.text-field:focused,
+.combo-box-base:focused {
+	-fx-border-color: -color-primary;
+	-fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.15), 8, 0.2, 0, 0);
 }
 
 /* id yg benar sesuai FXML */
 #seedUrl {
-    -fx-pref-width: 400px;
-    -fx-max-width: 550px;
+	-fx-pref-width: 400px;
+	-fx-max-width: 550px;
 }
 
 .label {
-    -fx-font-size: 13px;
-    -fx-text-fill: -color-text;
+	-fx-font-size: 13px;
+	-fx-text-fill: -color-text;
 }
 
 /* ====== Buttons (umum) ====== */
 .button {
-    -fx-font-weight: 600;
-    -fx-font-size: 13px;
-    -fx-cursor: hand;
-    -fx-background-radius: var(-radius-sm);
-    -fx-border-radius: var(-radius-sm);
-    -fx-background-color: -color-surface;
-    -fx-text-fill: -color-text;
-    -fx-border-color: -color-border;
-    -fx-padding: 8 14;
+	-fx-font-weight: 600;
+	-fx-font-size: 13px;
+	-fx-cursor: hand;
+	-fx-background-radius: 3;
+	-fx-border-radius: 3;
+	-fx-background-color: -color-surface;
+	-fx-text-fill: -color-text;
+	-fx-border-color: -color-border;
+	-fx-padding: 8 14;
 }
 .button:hover {
-    -fx-background-color: #F8FAFC;
+	-fx-background-color: #f8fafc;
 }
 .button:pressed {
-    -fx-background-color: #EEF2F7;
+	-fx-background-color: #eef2f7;
 }
 
 /* Variasi khusus */
 #checkButton {
-    -fx-background-color: -color-success;
-    -fx-text-fill: white;
-    -fx-border-color: transparent;
+	-fx-background-color: -color-success;
+	-fx-text-fill: white;
+	-fx-border-color: transparent;
 }
-#checkButton:hover { -fx-background-color: #0EA372; }
-#checkButton:pressed { -fx-background-color: #0C8F65; }
+#checkButton:hover {
+	-fx-background-color: #0ea372;
+}
+#checkButton:pressed {
+	-fx-background-color: #0c8f65;
+}
 
 #stopButton {
-    -fx-background-color: -color-warning;
-    -fx-text-fill: white;
-    -fx-border-color: transparent;
+	-fx-background-color: -color-warning;
+	-fx-text-fill: white;
+	-fx-border-color: transparent;
 }
-#stopButton:hover { -fx-background-color: #E1900A; }
-#stopButton:pressed { -fx-background-color: #C87F09; }
+#stopButton:hover {
+	-fx-background-color: #e1900a;
+}
+#stopButton:pressed {
+	-fx-background-color: #c87f09;
+}
 
 #exportButton {
-    -fx-background-color: -color-primary;
-    -fx-text-fill: white;
-    -fx-border-color: transparent;
+	-fx-background-color: -color-primary;
+	-fx-text-fill: white;
+	-fx-border-color: transparent;
 }
-#exportButton:hover { -fx-background-color: #2F78F2; }
-#exportButton:pressed { -fx-background-color: #2A6BDD; }
+#exportButton:hover {
+	-fx-background-color: #2f78f2;
+}
+#exportButton:pressed {
+	-fx-background-color: #2a6bdd;
+}
 
 /* ====== Toggle Buttons (segmented control) ====== */
 .toggle-button {
-    -fx-background-color: -color-surface;
-    -fx-text-fill: -color-text;
-    -fx-border-color: -color-border;
-    -fx-border-radius: var(-radius-sm);
-    -fx-background-radius: var(-radius-sm);
-    -fx-padding: 6 12;
+	-fx-background-color: -color-surface;
+	-fx-text-fill: -color-text;
+	-fx-border-color: -color-border;
+	-fx-border-radius: 3;
+	-fx-background-radius: 3;
+	-fx-padding: 6 12;
 }
 .toggle-button:selected {
-    -fx-background-color: -color-primary;
-    -fx-text-fill: white;
-    -fx-border-color: transparent;
+	-fx-background-color: -color-primary;
+	-fx-text-fill: white;
+	-fx-border-color: transparent;
 }
 .toggle-button:hover {
-    -fx-background-color: #F8FAFC;
+	-fx-background-color: #f8fafc;
 }
 .toggle-button:selected:hover {
-    -fx-background-color: #2F78F2;
+	-fx-background-color: #2f78f2;
 }
 
 /* ====== TableView ====== */
 .table-view {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
-    -fx-border-color: transparent;
+	-fx-background-color: transparent;
+	-fx-padding: 0;
+	-fx-border-color: transparent;
 }
 .table-view > .virtual-flow > .clipped-container > .sheet > .table-row-cell {
-    -fx-background-color: -color-surface;
-    -fx-border-color: transparent transparent -color-border transparent;
+	-fx-background-color: -color-surface;
+	-fx-border-color: transparent transparent -color-border transparent;
 }
 .table-row-cell:odd {
-    -fx-background-color: #FAFBFD;
+	-fx-background-color: #fafbfd;
 }
 .table-row-cell:hover {
-    -fx-background-color: #F2F6FF;
+	-fx-background-color: #f2f6ff;
 }
 .table-row-cell:selected {
-    -fx-background-color: rgba(59,130,246,0.15);
+	-fx-background-color: rgba(59, 130, 246, 0.15);
 }
 
 .table-view .column-header-background {
-    -fx-background-color: -color-header;
-    -fx-border-color: -color-border;
-    -fx-border-width: 0 0 1 0;
+	-fx-background-color: -color-header;
+	-fx-border-color: -color-border;
+	-fx-border-width: 0 0 1 0;
 }
-.table-view .column-header, .table-view .filler {
-    -fx-background-color: transparent;
+.table-view .column-header,
+.table-view .filler {
+	-fx-background-color: transparent;
 
-        -fx-border-color: transparent -color-border transparent transparent;
-        -fx-border-width: 0 1 0 0;
+	/* new */
+	-fx-border-color: transparent -color-border transparent transparent;
+	-fx-border-width: 0 1 0 0;
 }
 .table-view .column-header .label {
-    -fx-font-weight: 600;
-    -fx-text-fill: -color-muted;
-    -fx-padding: 8 10;
+	-fx-font-weight: 600;
+	-fx-text-fill: -color-muted;
+	-fx-padding: 8 10;
 
-        -fx-border-color: transparent -color-border transparent transparent;
-        -fx-border-width: 0 1 0 0;
+	/* new */
+	-fx-border-color: transparent -color-border transparent transparent;
+	-fx-border-width: 0 1 0 0;
 }
 .table-view .table-cell {
-    -fx-padding: 8 10;
-    -fx-border-color: transparent;
-    -fx-text-fill: -color-text;
+	-fx-padding: 8 10;
+	-fx-border-color: transparent;
+	-fx-text-fill: -color-text;
 
-        -fx-padding: 8 10;
-        -fx-text-fill: -color-text;
-
-        /* tambahkan garis vertikal tipis di kanan setiap sel */
-        -fx-border-color: transparent -color-border transparent transparent;
-        -fx-border-width: 0 1 0 0;
+	/* new */
+	-fx-padding: 8 10;
+	-fx-text-fill: -color-text;
+	/* tambahkan garis vertikal tipis di kanan setiap sel */
+	-fx-border-color: transparent -color-border transparent transparent;
+	-fx-border-width: 0 1 0 0;
 }
 
 /* Penekanan kolom angka tetap center */
-#colNumber, #colPageNumber {
-    -fx-alignment: CENTER;
+#colNumber,
+#colPageNumber {
+	-fx-alignment: CENTER;
 }
 
 /* Status kolom bisa diberi badge feel (opsional kalau kamu mau) */
-#colStatus .table-cell, #colPageStatus .table-cell {
-    -fx-font-weight: 600;
+#colStatus .table-cell,
+#colPageStatus .table-cell {
+	-fx-font-weight: 600;
 }
 
 /* ====== Pagination (custom buttons) ====== */
 .page-button {
-    -fx-padding: 6 10;
-    -fx-font-weight: 600;
-    -fx-background-color: -color-surface;
-    -fx-text-fill: -color-text;
-    -fx-border-color: -color-border;
-    -fx-background-radius: var(-radius-sm);
-    -fx-border-radius: var(-radius-sm);
-    -fx-cursor: hand;
+	-fx-padding: 6 10;
+	-fx-font-weight: 600;
+	-fx-background-color: -color-surface;
+	-fx-text-fill: -color-text;
+	-fx-border-color: -color-border;
+	-fx-background-radius: 3;
+	-fx-border-radius: 3;
+	-fx-cursor: hand;
 }
 .page-button:hover {
-    -fx-background-color: #F8FAFC;
+	-fx-background-color: #f8fafc;
 }
 .current-page {
-    -fx-background-color: -color-primary;
-    -fx-text-fill: white;
-    -fx-border-color: transparent;
+	-fx-background-color: -color-primary;
+	-fx-text-fill: white;
+	-fx-border-color: transparent;
 }
 
 /* ====== Grid / Kartu Ringkasan (tanpa ubah layout) ====== */
-.grid-pane {
-    -fx-background-color: -color-surface;
-    -fx-background-radius: var(-radius-md);
-    -fx-border-color: -color-border;
-    -fx-border-radius: var(-radius-md);
-    -fx-padding: 10;
-    -fx-effect: dropshadow(gaussian, rgba(16,24,40,0.06), 12, 0.2, 0, 2);
+.summary-card {
+	-fx-background-color: #ffffff;
+	-fx-background-radius: 10;
+	-fx-border-color: #e6e8ef;
+	-fx-border-radius: 10;
+	-fx-border-width: 1;
+	-fx-padding: 10;
+	-fx-background-insets: 0; /* penting agar radius/border terlihat */
+	-fx-effect: dropshadow(gaussian, rgba(16, 24, 40, 0.06), 12, 0.2, 0, 2);
 }
-.grid-pane .label {
-    -fx-padding: 2 6;
+
+.summary-card .label {
+	-fx-padding: 2 6;
 }
 
 /* ====== Scrollbar (lebih tipis) ====== */
-.scroll-bar:vertical .thumb, .scroll-bar:horizontal .thumb {
-    -fx-background-color: #D4D8E0;
-    -fx-background-insets: 2;
-    -fx-background-radius: 8;
+.scroll-bar:vertical .thumb,
+.scroll-bar:horizontal .thumb {
+	-fx-background-color: #d4d8e0;
+	-fx-background-insets: 2;
+	-fx-background-radius: 8;
 }
-.scroll-bar:vertical, .scroll-bar:horizontal {
-    -fx-background-color: transparent;
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+	-fx-background-color: transparent;
 }
 
-/* ====== Mode Gelap opsional (aktifkan dgn menambahkan styleClass 'dark' ke root) ====== */
+/* ====== Mode Gelap (aktifkan dgn menambahkan styleClass 'dark' ke root) ====== */
 .root.dark {
-    -color-bg:       #0F172A;
-    -color-surface:  #111827;
-    -color-border:   #263043;
-    -color-muted:    #9CA3AF;
-    -color-text:     #E5E7EB;
-    -color-header:   #0B1220;
+	-color-bg: #0f172a;
+	-color-surface: #111827;
+	-color-border: #263043;
+	-color-muted: #9ca3af;
+	-color-text: #e5e7eb;
+	-color-header: #0b1220;
 }
 .root.dark .button:not(#checkButton):not(#stopButton):not(#exportButton),
 .root.dark .toggle-button:not(:selected),
 .root.dark .text-field,
 .root.dark .combo-box-base,
 .root.dark .grid-pane {
-    -fx-background-color: -color-surface;
-    -fx-border-color: -color-border;
+	-fx-background-color: -color-surface;
+	-fx-border-color: -color-border;
 }
-.root.dark .table-row-cell:odd { -fx-background-color: #0E1626; }
-.root.dark .table-row-cell:hover { -fx-background-color: #142036; }
-.root.dark .table-row-cell:selected { -fx-background-color: rgba(59,130,246,0.25); }
+.root.dark .table-row-cell:odd {
+	-fx-background-color: #0e1626;
+}
+.root.dark .table-row-cell:hover {
+	-fx-background-color: #142036;
+}
+.root.dark .table-row-cell:selected {
+	-fx-background-color: rgba(59, 130, 246, 0.25);
+}
