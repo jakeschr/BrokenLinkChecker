@@ -93,7 +93,7 @@ public class Controller {
 
     private int currentPage = 1;                              // Halaman saat ini dalam pagination
     private int totalPageCount = 0;                           // Total halaman dalam pagination
-    private static final int ROWS_PER_PAGE = 1;              // Jumlah baris per halaman
+    private static final int ROWS_PER_PAGE = 5;              // Jumlah baris per halaman
     private static final int MAX_PAGE_BUTTONS = 5;            // Tombol navigasi maksimal yang ditampilkan
     private static final double PAGE_BUTTON_WIDTH = 40;       // Lebar tombol halaman
 

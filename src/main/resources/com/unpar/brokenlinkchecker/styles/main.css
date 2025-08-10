@@ -148,55 +148,40 @@
 	-fx-background-color: #2f78f2;
 }
 
-/* =============================================================================
-   TABLEVIEW
-   -----------------------------------------------------------------------------
-   Kunci garis horizontal:
-   1) Aktifkan grid bawaan dengan -fx-table-cell-border-color
-   2) Pastikan .table-cell punya border bawah (width & color)
-   3) Jangan menimpa border dengan background yang menghapusnya
+/* ============================================================================
+   TABLEVIEW — Grid lengkap (horizontal + vertikal) untuk header & body
+   ----------------------------------------------------------------------------
+   - Kita MATIKAN grid bawaan skin dengan set cell/header border color -> transparent
+   - Lalu kita gambar border KANAN + BAWAH sendiri di setiap cell header & body
+   - TableView diberi border luar agar bingkai tabel utuh
    ========================================================================== */
 .table-view {
-	/* Transparan agar card/container di belakang bisa tampil */
 	-fx-background-color: transparent;
 	-fx-padding: 0;
-	-fx-border-color: transparent;
 
-	/* Mengaktifkan grid (JavaFX skin menggambar garis berdasarkan ini) */
-	-fx-table-cell-border-color: -color-border; /* garis body */
-	-fx-table-header-border-color: -color-border; /* garis header */
+	/* Bingkai luar tabel (opsional, bikin tabel “terbingkai”) */
+	-fx-border-color: -color-border;
+	-fx-border-width: 1;
+
+	/* Matikan grid bawaan (menghindari garis horizontal dobel) */
+	-fx-table-cell-border-color: transparent;
+	-fx-table-header-border-color: transparent;
 }
 
-/* Baris body: atur warna dasar baris tanpa mematikan border grid */
-.table-view > .virtual-flow > .clipped-container > .sheet > .table-row-cell {
-	-fx-background-color: -color-surface;
-}
-
-/* Zebra strip untuk keterbacaan */
-.table-row-cell:odd {
-	-fx-background-color: #fafbfd;
-}
-
-/* Hover & Selected (hati-hati: jangan gunakan opacity 1 di atas border) */
-.table-row-cell:hover {
-	-fx-background-color: #f2f6ff;
-}
-.table-row-cell:selected {
-	-fx-background-color: rgba(59, 130, 246, 0.15);
-}
-
-/* HEADER STRIP di atas kolom */
+/* ================= HEADER ================= */
+/* Latar belakang strip header (area di balik kolom) */
 .table-view .column-header-background {
 	-fx-background-color: -color-header;
-	-fx-border-color: -color-border;
-	-fx-border-width: 0 0 1 0; /* garis bawah header */
 	-fx-padding: 0;
 }
 
-/* Setiap header kolom: biarkan grid yang gambar garisnya */
-.table-view .column-header {
+/* Tiap header kolom: gambar vertikal (kanan) + horizontal (bawah) */
+.table-view .column-header,
+.table-view .filler {
 	-fx-background-color: transparent;
 	-fx-padding: 0;
+	-fx-border-color: transparent -color-border -color-border transparent; /* top right bottom left */
+	-fx-border-width: 0 1 1 0;
 }
 
 /* Tipografi header */
@@ -206,25 +191,46 @@
 	-fx-padding: 8 10;
 }
 
-/* ==== INI ADALAH BAGIAN PENTING UNTUK GARIS HORIZONTAL BODY ==== */
-/* Paksa border bawah pada setiap cell agar garis horizontal selalu terlihat */
+/* ================= BODY ================= */
+/* Warna dasar baris (zebra) — jangan set border di row, biar cell yang gambar */
+.table-view
+	> .virtual-flow
+	> .clipped-container
+	> .sheet
+	> .table-row-cell:even {
+	-fx-background-color: #ffffff; /* genap */
+}
+.table-view
+	> .virtual-flow
+	> .clipped-container
+	> .sheet
+	> .table-row-cell:odd {
+	-fx-background-color: #f9fafb; /* ganjil */
+}
+
+/* Hover & selected berada di atas zebra */
+.table-row-cell:hover {
+	-fx-background-color: #f2f6ff;
+}
+.table-row-cell:selected {
+	-fx-background-color: rgba(59, 130, 246, 0.15);
+}
+
+/* Tiap sel body: gambar vertikal (kanan) + horizontal (bawah) */
 .table-view .table-cell {
 	-fx-padding: 8 10;
 	-fx-text-fill: -color-text;
 
-	/* Garis horizontal (bawah) */
-	-fx-border-color: transparent transparent -color-border transparent;
-	-fx-border-width: 0 0 1 0;
+	/* Garis vertikal antar kolom + garis horizontal antar baris */
+	-fx-border-color: transparent -color-border -color-border transparent; /* t r b l */
+	-fx-border-width: 0 1 1 0;
 }
 
-/* Penekanan kolom angka dan status
-   Catatan: selector untuk TableColumn via id → terapkan ke .table-cell di dalamnya. */
+/* ================= UTIL: perataan & penekanan kolom tertentu ================= */
 #colNumber .table-cell,
 #colPageNumber .table-cell {
 	-fx-alignment: CENTER;
 }
-
-/* Bold untuk kolom status */
 #colStatus .table-cell,
 #colPageStatus .table-cell {
 	-fx-font-weight: 600;
@@ -331,11 +337,40 @@
 	-fx-prompt-text-fill: #b4bbc8;
 }
 
-/* Pastikan garis tabel tetap terlihat di dark mode */
+/* ====================== DARK MODE tabel view ====================== */
 .root.dark .table-view {
-	-fx-table-cell-border-color: -color-border;
-	-fx-table-header-border-color: -color-border;
+	-fx-border-color: -color-border; /* bingkai luar */
+	-fx-table-cell-border-color: transparent; /* tetap off */
+	-fx-table-header-border-color: transparent;
 }
+
+/* Header & body: pakai warna border dari token dark */
+.root.dark .table-view .column-header,
+.root.dark .table-view .filler,
 .root.dark .table-view .table-cell {
-	-fx-border-color: transparent transparent -color-border transparent;
+	-fx-border-color: transparent -color-border -color-border transparent;
+}
+
+/* Zebra dark mode */
+.root.dark
+	.table-view
+	> .virtual-flow
+	> .clipped-container
+	> .sheet
+	> .table-row-cell:even {
+	-fx-background-color: #111827; /* genap */
+}
+.root.dark
+	.table-view
+	> .virtual-flow
+	> .clipped-container
+	> .sheet
+	> .table-row-cell:odd {
+	-fx-background-color: #0e1626; /* ganjil */
+}
+.root.dark .table-row-cell:hover {
+	-fx-background-color: #142036;
+}
+.root.dark .table-row-cell:selected {
+	-fx-background-color: rgba(59, 130, 246, 0.25);
 }
