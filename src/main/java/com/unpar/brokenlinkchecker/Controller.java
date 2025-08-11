@@ -5,6 +5,7 @@ import com.unpar.brokenlinkchecker.model.CrawledPage;
 import com.unpar.brokenlinkchecker.model.ExecutionStatus;
 import com.unpar.brokenlinkchecker.model.LinkResult;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,53 +15,56 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.time.LocalDateTime;
-import java.util.function.Consumer;
 import java.time.format.DateTimeFormatter;
-
+import java.util.function.Consumer;
 
 /**
  * Controller utama untuk menangani interaksi UI aplikasi BrokenLinkChecker.
- * Bertanggung jawab untuk menginisialisasi tabel, menangani klik tombol, dan
- * menerima data dari Service secara streaming untuk ditampilkan ke tabel.
+ * - Memisahkan setup kolom untuk dua tabel
+ * - Memperbaiki tipe ObservableValue<Number> (pakai ReadOnlyObjectWrapper)
+ * - Terintegrasi dengan Service (BFS/DFS), streaming broken links & crawled pages
  */
 public class Controller {
 
+    // ===================== Komponen FXML =====================
+    @FXML
+    private TextField seedUrl;
+    @FXML
+    private ComboBox<String> algoChoiceBox;
+    @FXML
+    private Button checkButton;
+    @FXML
+    private Button stopButton;
+    @FXML
+    private Button exportButton;
 
-    // ===================== Komponen FXML (terhubung ke main.fxml) =====================
     @FXML
-    private TextField seedUrl;                        // Input URL awal
+    private Label statusLabel;
     @FXML
-    private ComboBox<String> algoChoiceBox;           // Dropdown pilihan algoritma (BFS/DFS)
+    private Label pageCountLabel;
     @FXML
-    private Button checkButton;                       // Tombol untuk mulai pengecekan
+    private Label linkCountLabel;
     @FXML
-    private Button stopButton;                        // Tombol untuk menghentikan pengecekan
+    private Label brokenCountLabel;
+
     @FXML
-    private Button exportButton;                      // Tombol untuk ekspor hasil (belum diimplementasikan)
-    @FXML
-    private Label statusLabel;                        // Label status (IDLE, CHECKING, dsb)
-    @FXML
-    private Label pageCountLabel;                     // Label total halaman yang dikunjungi
-    @FXML
-    private Label linkCountLabel;                     // Label total semua link yang ditemukan
-    @FXML
-    private Label brokenCountLabel;                   // Label total link rusak
-    @FXML
-    private VBox customPagination;                    // Komponen pagination khusus (bukan Pagination bawaan JavaFX)
+    private VBox customPagination;
+
+    // Tabel Broken Links
     @FXML
     private TableView<LinkResult> brokenLinkTable;
+    @FXML
+    private TableColumn<LinkResult, Number> colNumber;
+    @FXML
+    private TableColumn<LinkResult, String> colBrokenLink;
+    @FXML
+    private TableColumn<LinkResult, String> colStatus;
+    @FXML
+    private TableColumn<LinkResult, String> colSourcePage;
+    @FXML
+    private TableColumn<LinkResult, String> colAnchorText;
 
-    @FXML
-    private TableColumn<LinkResult, Number> colNumber;       // Kolom nomor
-    @FXML
-    private TableColumn<LinkResult, String> colBrokenLink;   // Kolom link rusak
-    @FXML
-    private TableColumn<LinkResult, String> colStatus;       // Kolom status HTTP
-    @FXML
-    private TableColumn<LinkResult, String> colSourcePage;   // Kolom halaman sumber
-    @FXML
-    private TableColumn<LinkResult, String> colAnchorText;   // Kolom teks anchor
-
+    // Tabel Crawled Pages
     @FXML
     private TableView<CrawledPage> crawledPageTable;
     @FXML
@@ -74,103 +78,105 @@ public class Controller {
     @FXML
     private TableColumn<CrawledPage, String> colAccessTime;
 
-    @FXML
-    private ObservableList<CrawledPage> crawledPageList = FXCollections.observableArrayList();
-
-
+    // Toggle
     @FXML
     private ToggleButton brokenLinkToggle;
     @FXML
     private ToggleButton webPageToggle;
 
     // ===================== Variabel Internal =====================
-    private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();       // Semua hasil link rusak
-    private final ObservableList<LinkResult> currentPageResults = FXCollections.observableArrayList(); // Subset hasil untuk ditampilkan per halaman
+    private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();
+    private final ObservableList<LinkResult> currentPageResults = FXCollections.observableArrayList();
 
-    private Service service;                                  // Instance service backend
-    private ExecutionStatus currentStatus = ExecutionStatus.IDLE;  // Status aplikasi saat ini
-    private CrawlResult lastCrawlResult = null;               // Menyimpan hasil akhir crawling
+    private final ObservableList<CrawledPage> crawledPageList = FXCollections.observableArrayList();
 
-    private int currentPage = 1;                              // Halaman saat ini dalam pagination
-    private int totalPageCount = 0;                           // Total halaman dalam pagination
-    private static final int ROWS_PER_PAGE = 5;              // Jumlah baris per halaman
-    private static final int MAX_PAGE_BUTTONS = 5;            // Tombol navigasi maksimal yang ditampilkan
-    private static final double PAGE_BUTTON_WIDTH = 40;       // Lebar tombol halaman
+    private Service service;
+    private ExecutionStatus currentStatus = ExecutionStatus.IDLE;
+    private CrawlResult lastCrawlResult = null;
+
+    private int currentPage = 1;
+    private int totalPageCount = 0;
+    private static final int ROWS_PER_PAGE = 5;
+    private static final int MAX_PAGE_BUTTONS = 5;
+    private static final double PAGE_BUTTON_WIDTH = 40;
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    /**
-     * Dipanggil otomatis setelah FXML dimuat. Inisialisasi awal komponen tabel dan dropdown.
-     */
+    // ===================== Inisialisasi =====================
     @FXML
     public void initialize() {
-        setupTableColumns();           // Atur lebar kolom dan binding isi tabel
-        setupAlgoChoiceBox();         // Inisialisasi pilihan algoritma
-        brokenLinkTable.setItems(currentPageResults);  // Sambungkan data ke tabel rusak
-        setStatus(ExecutionStatus.IDLE);               // Set status awal
-        setupToggleView();            // Toggle antara dua tabel
+        setupAlgoChoiceBox();
+        setupBrokenLinkTableColumns();
+        setupCrawledPageTableColumns();
+
+        brokenLinkTable.setItems(currentPageResults);
+        crawledPageTable.setItems(crawledPageList);
+
+        setStatus(ExecutionStatus.IDLE);
+        setupToggleView();
+        updatePagination();
     }
 
-
-    /**
-     * Menentukan lebar dan isi kolom tabel
-     */
-    private void setupTableColumns() {
-        // BrokenLinkTable
+    // ===================== Setup kolom (dipisah) =====================
+    private void setupBrokenLinkTableColumns() {
+        // Lebar relatif
         colNumber.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.03));
         colStatus.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.15));
         colBrokenLink.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.40));
         colAnchorText.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.17));
         colSourcePage.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.25));
 
-        colNumber.setCellValueFactory(cell -> Bindings.createIntegerBinding(() -> {
-            int index = currentPageResults.indexOf(cell.getValue());
-            return (currentPage - 1) * ROWS_PER_PAGE + index + 1;
-        }));
+        // Data binding
+        colNumber.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                (currentPage - 1) * ROWS_PER_PAGE + currentPageResults.indexOf(cell.getValue()) + 1
+        ));
         colBrokenLink.setCellValueFactory(cell -> cell.getValue().brokenLinkProperty());
         colStatus.setCellValueFactory(cell -> cell.getValue().statusProperty());
         colSourcePage.setCellValueFactory(cell -> cell.getValue().sourcePageProperty());
         colAnchorText.setCellValueFactory(cell -> cell.getValue().anchorTextProperty());
+    }
 
-        // CrawledPageTable
+    private void setupCrawledPageTableColumns() {
+        // Lebar relatif
         colPageNumber.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.03));
         colPageStatus.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.15));
         colPageUrl.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.40));
         colLinkCount.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.17));
         colAccessTime.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.25));
 
-        colPageNumber.setCellValueFactory(cell -> Bindings.createIntegerBinding(() ->
-                crawledPageList.indexOf(cell.getValue()) + 1));
+        // Data binding
+        colPageNumber.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                crawledPageList.indexOf(cell.getValue()) + 1
+        ));
         colPageUrl.setCellValueFactory(cell -> cell.getValue().urlProperty());
         colPageStatus.setCellValueFactory(cell -> cell.getValue().statusProperty());
-        colLinkCount.setCellValueFactory(cell -> cell.getValue().linkCountProperty());
 
+        // Jika CrawledPage punya IntegerProperty, gunakan .asObject():
+        // Misal: totalLinksProperty() atau linkCountProperty()
+        colLinkCount.setCellValueFactory(cell -> {
+            // Sesuaikan dg nama properti di model Anda:
+            // return cell.getValue().totalLinksProperty().asObject();
+            return cell.getValue().linkCountProperty(); // sesuai versi lama Anda
+        });
 
         colAccessTime.setCellValueFactory(cell -> Bindings.createStringBinding(
                 () -> {
-                    LocalDateTime time = cell.getValue().getAccessedTime();
-                    return time != null ? TIME_FORMATTER.format(time) : "";
+                    LocalDateTime t = cell.getValue().getAccessedTime();
+                    return t != null ? TIME_FORMATTER.format(t) : "";
                 },
                 cell.getValue().accessTimeProperty()
         ));
-
-
     }
 
-
-    /**
-     * Inisialisasi pilihan algoritma crawling
-     */
+    // ===================== Algoritma & Toggle =====================
     private void setupAlgoChoiceBox() {
         algoChoiceBox.setItems(FXCollections.observableArrayList(
                 "Breadth-First Search (BFS)",
                 "Depth-First Search (DFS)"
         ));
+        algoChoiceBox.getSelectionModel().select(0);
     }
 
-    /**
-     * Inisialisasi ToggleButton agar hanya satu yang aktif dan ganti tabel sesuai toggle.
-     */
     private void setupToggleView() {
         ToggleGroup toggleGroup = new ToggleGroup();
         brokenLinkToggle.setToggleGroup(toggleGroup);
@@ -184,120 +190,103 @@ public class Controller {
             }
         });
 
-        // Set tampilan awal
+        // Tampilan awal
         brokenLinkToggle.setSelected(true);
         showBrokenLinkTable();
     }
 
-
     private void showBrokenLinkTable() {
         brokenLinkTable.setVisible(true);
         crawledPageTable.setVisible(false);
-        updatePagination(); // update pagination untuk link rusak
+        updatePagination();
     }
 
     private void showCrawledPageTable() {
         brokenLinkTable.setVisible(false);
         crawledPageTable.setVisible(true);
-        // Tidak perlu pagination jika halaman tidak banyak (opsional)
     }
 
-
-    /**
-     * Event handler saat tombol "Check" diklik
-     */
+    // ===================== Actions =====================
     @FXML
     public void onCheckClick() {
-        String url = seedUrl.getText();        // Ambil input URL dari TextField
-        String algoLabel = algoChoiceBox.getValue(); // bisa null jika belum dipilih
+        String url = seedUrl.getText();
+        String algoLabel = algoChoiceBox.getValue();
 
         if (url == null || url.isBlank()) {
-            showAlert("Input Error", "Seed URL tidak boleh kosong.");
+            showInfo("Input Error", "Seed URL tidak boleh kosong.");
             return;
         }
         if (algoLabel == null) {
-            showAlert("Input Error", "Pilih Algorithm terlebih dahulu.");
+            showInfo("Input Error", "Pilih Algorithm terlebih dahulu.");
             return;
         }
 
         String algorithm = algoLabel.contains("BFS") ? "BFS" : "DFS";
 
-        if (url == null || url.isBlank()) {
-            showAlert("Input Error", "Seed URL tidak boleh kosong.");
-            return;
-        }
-
-        // Tambahkan http:// jika user tidak menulis protokol
+        // Prepend skema jika kosong
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "http://" + url;
         }
 
-        resetData();                           // Bersihkan semua data sebelumnya
-        setStatus(ExecutionStatus.CHECKING);   // Set status menjadi "Checking..."
+        resetData();
+        setStatus(ExecutionStatus.CHECKING);
 
-        service = new Service();               // Buat instance baru dari service
-        service.setOnLinkResult(createStreamingConsumer());         // Untuk menerima hasil link rusak saat crawling
-        service.setOnComplete(this::onCrawlingComplete);            // Callback ketika crawling selesai
-        service.setOnError(this::onCrawlingError);                  // Callback ketika error
-        service.setOnPageCountUpdate(this::updatePageCount);       // Update label jumlah halaman
-        service.setOnTotalLinkUpdate(this::updateTotalLinkCount);  // Update label jumlah tautan total
-        service.setOnBrokenLinkUpdate(this::updateBrokenLinkCount);// Update label jumlah tautan rusak
+        service = new Service();
 
-        service.startCrawling(url, algorithm); // Kirim URL + algoritma (BFS/DFS)
+        // Stream tautan rusak (real-time)
+        service.setOnLinkResult(createStreamingConsumer());
+
+        // Stream halaman (untuk tabel Crawled Pages)
+        service.setOnCrawledPage(cp -> Platform.runLater(() -> crawledPageList.add(cp)));
+
+        // Update metrik
+        service.setOnPageCountUpdate(this::updatePageCount);
+        service.setOnTotalLinkUpdate(this::updateTotalLinkCount);
+        service.setOnBrokenLinkUpdate(this::updateBrokenLinkCount);
+
+        // Selesai & Error
+        service.setOnComplete(this::onCrawlingComplete);
+        service.setOnError(this::onCrawlingError);
+
+        service.startCrawling(url, algorithm);
     }
 
-    /**
-     * Event handler saat tombol "Stop" diklik
-     */
     @FXML
     public void onStopClick() {
         if (service != null) {
-            service.stop();   // Beri sinyal ke thread untuk berhenti
+            service.stop();
         }
-        setStatus(ExecutionStatus.STOPPED); // Ubah status menjadi STOPPED
+        setStatus(ExecutionStatus.STOPPED);
     }
 
-    /**
-     * Event handler tombol "Export"
-     */
     @FXML
     public void onExportClick() {
-        showAlert("Export", "Fitur export belum diimplementasikan.");
+        // Placeholder sesuai versi lama—bisa diisi CSV export jika diinginkan.
+        showInfo("Export", "Fitur export belum diimplementasikan.");
     }
 
-    /**
-     * Callback streaming per tautan rusak dari service
-     */
+    // ===================== Callback streaming & status =====================
     private Consumer<LinkResult> createStreamingConsumer() {
         return result -> Platform.runLater(() -> {
-            allResults.add(result);  // Tambahkan ke daftar hasil
-            updatePagination();      // Perbarui tampilan pagination
+            allResults.add(result);
+            updatePagination();
         });
     }
 
-    /**
-     * Callback saat crawling selesai
-     */
     private void onCrawlingComplete(CrawlResult result) {
         Platform.runLater(() -> {
-            this.lastCrawlResult = result;  // Simpan hasil akhir crawling
-            setStatus(ExecutionStatus.COMPLETED); // Ganti status
+            this.lastCrawlResult = result;
+            setStatus(ExecutionStatus.COMPLETED);
         });
     }
 
-    /**
-     * Callback saat crawling gagal/error
-     */
     private void onCrawlingError(String errorMessage) {
         Platform.runLater(() -> {
-            setStatus(ExecutionStatus.ERROR);    // Set status error
-            showAlert("Error", "Terjadi kesalahan saat crawling: " + errorMessage); // Tampilkan error
+            setStatus(ExecutionStatus.ERROR);
+            showInfo("Error", "Terjadi kesalahan saat crawling: " + errorMessage);
         });
     }
 
-    /**
-     * Atur label dan tombol berdasarkan status aplikasi
-     */
     private void setStatus(ExecutionStatus status) {
         this.currentStatus = status;
 
@@ -335,49 +324,42 @@ public class Controller {
         }
     }
 
-    /**
-     * Reset seluruh data dan tampilan sebelum proses baru
-     */
+    // ===================== Reset & Metrik =====================
     private void resetData() {
-        allResults.clear();          // Kosongkan semua hasil
+        allResults.clear();
+        currentPageResults.clear();
+        crawledPageList.clear();
+
         currentPage = 1;
         totalPageCount = 0;
         pageCountLabel.setText("0");
         linkCountLabel.setText("0");
         brokenCountLabel.setText("0");
-        updatePagination();          // Bersihkan pagination
-        lastCrawlResult = null;      // Reset hasil crawling terakhir
+        updatePagination();
+
+        lastCrawlResult = null;
     }
 
-    /**
-     * Update label total halaman secara real-time
-     */
     private void updatePageCount(int count) {
         Platform.runLater(() -> pageCountLabel.setText(String.valueOf(count)));
     }
 
-    /**
-     * Update label total link secara real-time
-     */
+
     private void updateTotalLinkCount(int count) {
         Platform.runLater(() -> linkCountLabel.setText(String.valueOf(count)));
     }
 
-    /**
-     * Update label total link rusak secara real-time
-     */
     private void updateBrokenLinkCount(int count) {
         Platform.runLater(() -> brokenCountLabel.setText(String.valueOf(count)));
     }
 
-    /**
-     * Buat dan atur ulang tombol pagination
-     */
+    // ===================== Pagination (Broken Links) =====================
     private void updatePagination() {
-        customPagination.getChildren().clear(); // Bersihkan tombol sebelumnya
+        customPagination.getChildren().clear();
 
         totalPageCount = (int) Math.ceil((double) allResults.size() / ROWS_PER_PAGE);
         if (totalPageCount == 0) totalPageCount = 1;
+        if (currentPage > totalPageCount) currentPage = totalPageCount;
 
         HBox buttonBox = new HBox(5);
         buttonBox.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
@@ -391,21 +373,18 @@ public class Controller {
         int end = Math.min(totalPageCount, start + MAX_PAGE_BUTTONS - 1);
 
         for (int i = start; i <= end; i++) {
-            int page = i;
+            final int page = i;
             Button btn = createPageButton(String.valueOf(i), () -> goToPage(page), false);
             if (i == currentPage) btn.getStyleClass().add("current-page");
             buttonBox.getChildren().add(btn);
         }
 
         buttonBox.getChildren().add(next);
-        customPagination.getChildren().addAll(buttonBox, new Label("Halaman " + currentPage + " / " + totalPageCount));
+        customPagination.getChildren().addAll(buttonBox, new Label("Page " + currentPage + " / " + totalPageCount));
 
         updateCurrentPage(currentPage - 1); // index dari 0
     }
 
-    /**
-     * Buat tombol halaman dengan aksi tertentu
-     */
     private Button createPageButton(String text, Runnable action, boolean disabled) {
         Button btn = new Button(text);
         btn.setMinWidth(PAGE_BUTTON_WIDTH);
@@ -414,28 +393,21 @@ public class Controller {
         return btn;
     }
 
-    /**
-     * Arahkan ke halaman tertentu
-     */
     private void goToPage(int pageNumber) {
         if (pageNumber < 1 || pageNumber > totalPageCount) return;
         currentPage = pageNumber;
         updatePagination();
     }
 
-    /**
-     * Tampilkan subset hasil sesuai halaman yang aktif
-     */
     private void updateCurrentPage(int pageIndex) {
-        int fromIndex = pageIndex * ROWS_PER_PAGE;
+        int fromIndex = Math.max(0, pageIndex * ROWS_PER_PAGE);
         int toIndex = Math.min(fromIndex + ROWS_PER_PAGE, allResults.size());
+        if (fromIndex > toIndex) fromIndex = toIndex;
         currentPageResults.setAll(allResults.subList(fromIndex, toIndex));
     }
 
-    /**
-     * Tampilkan alert popup informasi
-     */
-    private void showAlert(String title, String message) {
+    // ===================== Alert util =====================
+    private void showInfo(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
