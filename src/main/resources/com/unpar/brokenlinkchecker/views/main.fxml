@@ -14,7 +14,7 @@
             <HBox spacing="20" alignment="CENTER_LEFT">
 
                 <padding>
-                    <Insets top="10" right="10" bottom="0" left="10"/>
+                    <Insets top="10" right="10" left="10"/>
                 </padding>
 
                 <!-- Input URL -->
@@ -38,7 +38,7 @@
             <HBox spacing="20" alignment="CENTER_LEFT">
 
                 <padding>
-                    <Insets top="0" right="10" bottom="10" left="10"/>
+                    <Insets right="10" bottom="10" left="10"/>
                 </padding>
 
                 <!-- Ringkasan Hasil -->
@@ -72,7 +72,7 @@
                 <!-- Toggle Buttons -->
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <ToggleButton fx:id="brokenLinkToggle" text="Broken Links" selected="true"/>
-                    <ToggleButton fx:id="webPageToggle" text="Crawled Pages"/>
+                    <ToggleButton fx:id="webpageToggle" text="Crawled Pages"/>
                 </HBox>
 
 
@@ -90,21 +90,21 @@
         <StackPane VBox.vgrow="ALWAYS">
             <TableView fx:id="brokenLinkTable" visible="true">
                 <columns>
-                    <TableColumn fx:id="colNumber" text="No"/>
-                    <TableColumn fx:id="colStatus" text="Status"/>
-                    <TableColumn fx:id="colBrokenLink" text="Broken Link"/>
-                    <TableColumn fx:id="colAnchorText" text="Link Text"/>
-                    <TableColumn fx:id="colSourcePage" text="Source Page"/>
+                    <TableColumn fx:id="colNumber1" text="No"/>
+                    <TableColumn fx:id="colStatus1" text="Status"/>
+                    <TableColumn fx:id="colBrokenLink1" text="Broken Link"/>
+                    <TableColumn fx:id="colAnchorText1" text="Anchor Text"/>
+                    <TableColumn fx:id="colWebpageLink1" text="Webpage Link"/>
                 </columns>
             </TableView>
 
-            <TableView fx:id="crawledPageTable" visible="false">
+            <TableView fx:id="webpageTable" visible="false">
                 <columns>
-                    <TableColumn fx:id="colPageNumber" text="No"/>
-                    <TableColumn fx:id="colPageStatus" text="Status"/>
-                    <TableColumn fx:id="colPageUrl" text="Page URL"/>
-                    <TableColumn fx:id="colLinkCount" text="Link Count"/>
-                    <TableColumn fx:id="colAccessTime" text="Access Time"/>
+                    <TableColumn fx:id="colNumber2" text="No"/>
+                    <TableColumn fx:id="colStatus2" text="Status"/>
+                    <TableColumn fx:id="colWebpageLink2" text="Webpage Link"/>
+                    <TableColumn fx:id="colLinkCount2" text="Link Count"/>
+                    <TableColumn fx:id="colAccessTime2" text="Access Time"/>
                 </columns>
             </TableView>
         </StackPane>

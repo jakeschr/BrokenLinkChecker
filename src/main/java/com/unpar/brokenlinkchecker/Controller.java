@@ -5,8 +5,8 @@ import com.unpar.brokenlinkchecker.model.CrawledPage;
 import com.unpar.brokenlinkchecker.model.ExecutionStatus;
 import com.unpar.brokenlinkchecker.model.LinkResult;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -19,10 +19,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
 /**
- * Controller utama untuk menangani interaksi UI aplikasi BrokenLinkChecker.
- * - Memisahkan setup kolom untuk dua tabel
- * - Memperbaiki tipe ObservableValue<Number> (pakai ReadOnlyObjectWrapper)
- * - Terintegrasi dengan Service (BFS/DFS), streaming broken links & crawled pages
+ * Controller untuk UI BrokenLinkChecker (diselaraskan dengan FXML terbaru).
+ * - ID kolom & tabel disesuaikan (colNumber1/2, colStatus1/2, dst.)
+ * - Toggle: brokenLinkToggle & webpageToggle
+ * - Streaming data ke dua tabel (broken links & webpages)
+ * - Pagination untuk Broken Links Table
  */
 public class Controller {
 
@@ -50,45 +51,45 @@ public class Controller {
     @FXML
     private VBox customPagination;
 
-    // Tabel Broken Links
+    // Broken Links Table (sesuai FXML terbaru)
     @FXML
     private TableView<LinkResult> brokenLinkTable;
     @FXML
-    private TableColumn<LinkResult, Number> colNumber;
+    private TableColumn<LinkResult, Number> colNumber1;
     @FXML
-    private TableColumn<LinkResult, String> colBrokenLink;
+    private TableColumn<LinkResult, String> colStatus1;
     @FXML
-    private TableColumn<LinkResult, String> colStatus;
+    private TableColumn<LinkResult, String> colBrokenLink1;
     @FXML
-    private TableColumn<LinkResult, String> colSourcePage;
+    private TableColumn<LinkResult, String> colAnchorText1;
     @FXML
-    private TableColumn<LinkResult, String> colAnchorText;
+    private TableColumn<LinkResult, String> colWebpageLink1;
 
-    // Tabel Crawled Pages
+    // Webpages Table (sesuai FXML terbaru)
     @FXML
-    private TableView<CrawledPage> crawledPageTable;
+    private TableView<CrawledPage> webpageTable;
     @FXML
-    private TableColumn<CrawledPage, Number> colPageNumber;
+    private TableColumn<CrawledPage, Number> colNumber2;
     @FXML
-    private TableColumn<CrawledPage, String> colPageUrl;
+    private TableColumn<CrawledPage, String> colStatus2;
     @FXML
-    private TableColumn<CrawledPage, String> colPageStatus;
+    private TableColumn<CrawledPage, String> colWebpageLink2;
     @FXML
-    private TableColumn<CrawledPage, Number> colLinkCount;
+    private TableColumn<CrawledPage, Number> colLinkCount2;
     @FXML
-    private TableColumn<CrawledPage, String> colAccessTime;
+    private TableColumn<CrawledPage, String> colAccessTime2;
 
-    // Toggle
+    // Toggle (sesuai FXML terbaru)
     @FXML
     private ToggleButton brokenLinkToggle;
     @FXML
-    private ToggleButton webPageToggle;
+    private ToggleButton webpageToggle;
 
     // ===================== Variabel Internal =====================
-    private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();
-    private final ObservableList<LinkResult> currentPageResults = FXCollections.observableArrayList();
+    private final ObservableList<LinkResult> allResults = FXCollections.observableArrayList();       // semua broken links
+    private final ObservableList<LinkResult> currentPageResults = FXCollections.observableArrayList(); // halaman saat ini (pagination)
 
-    private final ObservableList<CrawledPage> crawledPageList = FXCollections.observableArrayList();
+    private final ObservableList<CrawledPage> webpageList = FXCollections.observableArrayList();     // semua webpage same-host (sukses/gagal)
 
     private Service service;
     private ExecutionStatus currentStatus = ExecutionStatus.IDLE;
@@ -107,59 +108,55 @@ public class Controller {
     public void initialize() {
         setupAlgoChoiceBox();
         setupBrokenLinkTableColumns();
-        setupCrawledPageTableColumns();
+        setupWebpageTableColumns();
 
         brokenLinkTable.setItems(currentPageResults);
-        crawledPageTable.setItems(crawledPageList);
+        webpageTable.setItems(webpageList);
 
         setStatus(ExecutionStatus.IDLE);
         setupToggleView();
         updatePagination();
     }
 
-    // ===================== Setup kolom (dipisah) =====================
+    // ===================== Setup kolom tabel =====================
     private void setupBrokenLinkTableColumns() {
-        // Lebar relatif
-        colNumber.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.03));
-        colStatus.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.15));
-        colBrokenLink.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.40));
-        colAnchorText.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.17));
-        colSourcePage.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.25));
+        // Lebar relatif (mengacu ke brokenLinkTable)
+        colNumber1.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.06)); // sedikit lebih lebar
+        colStatus1.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.16));
+        colBrokenLink1.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.36));
+        colAnchorText1.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.18));
+        colWebpageLink1.prefWidthProperty().bind(brokenLinkTable.widthProperty().multiply(0.24));
 
         // Data binding
-        colNumber.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+        colNumber1.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
                 (currentPage - 1) * ROWS_PER_PAGE + currentPageResults.indexOf(cell.getValue()) + 1
         ));
-        colBrokenLink.setCellValueFactory(cell -> cell.getValue().brokenLinkProperty());
-        colStatus.setCellValueFactory(cell -> cell.getValue().statusProperty());
-        colSourcePage.setCellValueFactory(cell -> cell.getValue().sourcePageProperty());
-        colAnchorText.setCellValueFactory(cell -> cell.getValue().anchorTextProperty());
+        colStatus1.setCellValueFactory(cell -> cell.getValue().statusProperty());          // gunakan HttpStatus.getReasonPhrase() di backend saat set
+        colBrokenLink1.setCellValueFactory(cell -> cell.getValue().brokenLinkProperty());
+        colAnchorText1.setCellValueFactory(cell -> cell.getValue().anchorTextProperty());
+        colWebpageLink1.setCellValueFactory(cell -> cell.getValue().sourcePageProperty());
     }
 
-    private void setupCrawledPageTableColumns() {
-        // Lebar relatif
-        colPageNumber.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.03));
-        colPageStatus.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.15));
-        colPageUrl.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.40));
-        colLinkCount.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.17));
-        colAccessTime.prefWidthProperty().bind(crawledPageTable.widthProperty().multiply(0.25));
+    private void setupWebpageTableColumns() {
+        // Lebar relatif (mengacu ke webpageTable)
+        colNumber2.prefWidthProperty().bind(webpageTable.widthProperty().multiply(0.06));
+        colStatus2.prefWidthProperty().bind(webpageTable.widthProperty().multiply(0.16));
+        colWebpageLink2.prefWidthProperty().bind(webpageTable.widthProperty().multiply(0.40));
+        colLinkCount2.prefWidthProperty().bind(webpageTable.widthProperty().multiply(0.14));
+        colAccessTime2.prefWidthProperty().bind(webpageTable.widthProperty().multiply(0.24));
 
         // Data binding
-        colPageNumber.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
-                crawledPageList.indexOf(cell.getValue()) + 1
+        colNumber2.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(
+                webpageList.indexOf(cell.getValue()) + 1
         ));
-        colPageUrl.setCellValueFactory(cell -> cell.getValue().urlProperty());
-        colPageStatus.setCellValueFactory(cell -> cell.getValue().statusProperty());
+        colStatus2.setCellValueFactory(cell -> cell.getValue().statusProperty());          // gunakan HttpStatus.getReasonPhrase() di backend saat set
+        colWebpageLink2.setCellValueFactory(cell -> cell.getValue().urlProperty());
 
-        // Jika CrawledPage punya IntegerProperty, gunakan .asObject():
-        // Misal: totalLinksProperty() atau linkCountProperty()
-        colLinkCount.setCellValueFactory(cell -> {
-            // Sesuaikan dg nama properti di model Anda:
-            // return cell.getValue().totalLinksProperty().asObject();
-            return cell.getValue().linkCountProperty(); // sesuai versi lama Anda
-        });
+        // IntegerProperty → asObject() bila model menyediakan IntegerProperty
+        colLinkCount2.setCellValueFactory(cell -> cell.getValue().linkCountProperty());    // sesuaikan dengan model Anda
 
-        colAccessTime.setCellValueFactory(cell -> Bindings.createStringBinding(
+        // Format waktu dari LocalDateTime
+        colAccessTime2.setCellValueFactory(cell -> Bindings.createStringBinding(
                 () -> {
                     LocalDateTime t = cell.getValue().getAccessedTime();
                     return t != null ? TIME_FORMATTER.format(t) : "";
@@ -180,13 +177,13 @@ public class Controller {
     private void setupToggleView() {
         ToggleGroup toggleGroup = new ToggleGroup();
         brokenLinkToggle.setToggleGroup(toggleGroup);
-        webPageToggle.setToggleGroup(toggleGroup);
+        webpageToggle.setToggleGroup(toggleGroup);
 
         toggleGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
             if (newToggle == brokenLinkToggle) {
                 showBrokenLinkTable();
-            } else if (newToggle == webPageToggle) {
-                showCrawledPageTable();
+            } else if (newToggle == webpageToggle) {
+                showWebpageTable();
             }
         });
 
@@ -197,13 +194,13 @@ public class Controller {
 
     private void showBrokenLinkTable() {
         brokenLinkTable.setVisible(true);
-        crawledPageTable.setVisible(false);
+        webpageTable.setVisible(false);
         updatePagination();
     }
 
-    private void showCrawledPageTable() {
+    private void showWebpageTable() {
         brokenLinkTable.setVisible(false);
-        crawledPageTable.setVisible(true);
+        webpageTable.setVisible(true);
     }
 
     // ===================== Actions =====================
@@ -223,7 +220,7 @@ public class Controller {
 
         String algorithm = algoLabel.contains("BFS") ? "BFS" : "DFS";
 
-        // Prepend skema jika kosong
+        // Auto-prepend skema jika kosong
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "http://" + url;
         }
@@ -233,13 +230,13 @@ public class Controller {
 
         service = new Service();
 
-        // Stream tautan rusak (real-time)
-        service.setOnLinkResult(createStreamingConsumer());
+        // Streaming tautan rusak (real-time)
+        service.setOnLinkResult(createBrokenLinkStreamConsumer());
 
-        // Stream halaman (untuk tabel Crawled Pages)
-        service.setOnCrawledPage(cp -> Platform.runLater(() -> crawledPageList.add(cp)));
+        // Streaming halaman (Webpages Table)
+        service.setOnCrawledPage(cp -> Platform.runLater(() -> webpageList.add(cp)));
 
-        // Update metrik
+        // Update metrik ringkasan
         service.setOnPageCountUpdate(this::updatePageCount);
         service.setOnTotalLinkUpdate(this::updateTotalLinkCount);
         service.setOnBrokenLinkUpdate(this::updateBrokenLinkCount);
@@ -261,14 +258,15 @@ public class Controller {
 
     @FXML
     public void onExportClick() {
-        // Placeholder sesuai versi lama—bisa diisi CSV export jika diinginkan.
+        // TODO: implementasi ekspor CSV sesuai spesifikasi (unique/occurrence)
         showInfo("Export", "Fitur export belum diimplementasikan.");
     }
 
     // ===================== Callback streaming & status =====================
-    private Consumer<LinkResult> createStreamingConsumer() {
+    private Consumer<LinkResult> createBrokenLinkStreamConsumer() {
         return result -> Platform.runLater(() -> {
             allResults.add(result);
+            // refresh pagination hanya saat tab Broken Links terlihat, tapi aman untuk dipanggil kapan pun
             updatePagination();
         });
     }
@@ -328,7 +326,7 @@ public class Controller {
     private void resetData() {
         allResults.clear();
         currentPageResults.clear();
-        crawledPageList.clear();
+        webpageList.clear();
 
         currentPage = 1;
         totalPageCount = 0;
@@ -343,7 +341,6 @@ public class Controller {
     private void updatePageCount(int count) {
         Platform.runLater(() -> pageCountLabel.setText(String.valueOf(count)));
     }
-
 
     private void updateTotalLinkCount(int count) {
         Platform.runLater(() -> linkCountLabel.setText(String.valueOf(count)));
@@ -382,7 +379,7 @@ public class Controller {
         buttonBox.getChildren().add(next);
         customPagination.getChildren().addAll(buttonBox, new Label("Page " + currentPage + " / " + totalPageCount));
 
-        updateCurrentPage(currentPage - 1); // index dari 0
+        updateCurrentPage(currentPage - 1); // index mulai 0
     }
 
     private Button createPageButton(String text, Runnable action, boolean disabled) {

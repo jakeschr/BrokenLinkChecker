@@ -227,12 +227,12 @@
 }
 
 /* ================= UTIL: perataan & penekanan kolom tertentu ================= */
-#colNumber .table-cell,
-#colPageNumber .table-cell {
+#colNumber1 .table-cell,
+#colNumber2 .table-cell {
 	-fx-alignment: CENTER;
 }
-#colStatus .table-cell,
-#colPageStatus .table-cell {
+#colStatus1 .table-cell,
+#colStatus2 .table-cell {
 	-fx-font-weight: 600;
 }
 
